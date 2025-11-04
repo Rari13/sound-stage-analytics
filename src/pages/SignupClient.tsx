@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,9 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Users } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const SignupClient = () => {
   const navigate = useNavigate();
+  const { signUp, user } = useAuth();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -18,11 +22,59 @@ const SignupClient = () => {
     termsAccepted: false,
     privacyAccepted: false,
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement signup with Supabase
-    console.log("Client signup:", formData);
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.termsAccepted || !formData.privacyAccepted) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez accepter les conditions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await signUp(formData.email, formData.password, {
+      role: 'client',
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      terms_accepted: 'true',
+      privacy_accepted: 'true',
+    });
+
+    if (error) {
+      toast({
+        title: "Erreur d'inscription",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+    } else {
+      toast({
+        title: "Compte créé",
+        description: "Bienvenue sur Sound !",
+      });
+      navigate("/client/home");
+    }
   };
 
   return (
@@ -151,9 +203,9 @@ const SignupClient = () => {
             type="submit"
             className="w-full"
             size="lg"
-            disabled={!formData.termsAccepted || !formData.privacyAccepted}
+            disabled={!formData.termsAccepted || !formData.privacyAccepted || loading}
           >
-            Créer mon compte
+            {loading ? "Création..." : "Créer mon compte"}
           </Button>
         </form>
 

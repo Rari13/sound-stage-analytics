@@ -1,20 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Music } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn, user } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication
-    console.log("Login attempt:", { email });
+    setLoading(true);
+
+    const { error } = await signIn(email, password);
+
+    if (error) {
+      toast({
+        title: "Erreur de connexion",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+    } else {
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue !",
+      });
+      navigate("/");
+    }
   };
 
   return (
@@ -59,8 +86,8 @@ const Login = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
-            Se connecter
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? "Connexion..." : "Se connecter"}
           </Button>
         </form>
 

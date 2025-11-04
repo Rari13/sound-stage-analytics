@@ -1,37 +1,64 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignupClient from "./pages/SignupClient";
 import SignupOrganizer from "./pages/SignupOrganizer";
 import ClientHome from "./pages/ClientHome";
 import OrganizerHome from "./pages/OrganizerHome";
+import EventsBrowse from "./pages/EventsBrowse";
+import ClientTickets from "./pages/ClientTickets";
+import ClientFollows from "./pages/ClientFollows";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup-client" element={<SignupClient />} />
-          <Route path="/signup-organizer" element={<SignupOrganizer />} />
-          <Route path="/client/home" element={<ClientHome />} />
-          <Route path="/orga/home" element={<OrganizerHome />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <TooltipProvider>
+    <Sonner />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup-client" element={<SignupClient />} />
+        <Route path="/signup-organizer" element={<SignupOrganizer />} />
+        <Route path="/events/browse" element={<EventsBrowse />} />
+        <Route 
+          path="/client/home" 
+          element={
+            <ProtectedRoute requireRole="client">
+              <ClientHome />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/client/tickets" 
+          element={
+            <ProtectedRoute requireRole="client">
+              <ClientTickets />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/client/follows" 
+          element={
+            <ProtectedRoute requireRole="client">
+              <ClientFollows />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/orga/home" 
+          element={
+            <ProtectedRoute requireRole="organizer">
+              <OrganizerHome />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  </TooltipProvider>
 );
 
 export default App;

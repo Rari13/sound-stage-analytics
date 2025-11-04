@@ -1,24 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Ticket, Calendar, Heart, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const ClientHome = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="container mx-auto max-w-7xl space-y-8">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold mb-2">Mes événements</h1>
             <p className="text-muted-foreground">Bienvenue sur votre espace client</p>
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <User className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid md:grid-cols-3 gap-6">
           <Card className="p-6 space-y-2 hover:shadow-glow transition-base">
             <div className="flex items-center gap-3">
@@ -57,7 +64,6 @@ const ClientHome = () => {
           </Card>
         </div>
 
-        {/* Main Content */}
         <Card className="p-8 md:p-12">
           <div className="text-center space-y-6 max-w-2xl mx-auto">
             <div className="flex justify-center">
@@ -69,13 +75,14 @@ const ClientHome = () => {
             <p className="text-lg text-muted-foreground">
               Découvrez des événements incroyables et réservez vos billets en quelques clics
             </p>
-            <Button variant="hero" size="lg" className="mt-4">
-              Découvrir les événements
-            </Button>
+            <Link to="/events/browse">
+              <Button variant="hero" size="lg" className="mt-4">
+                Découvrir les événements
+              </Button>
+            </Link>
           </div>
         </Card>
 
-        {/* Quick Actions */}
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="p-6 space-y-4">
             <h3 className="text-xl font-bold">Événements recommandés</h3>
@@ -90,7 +97,9 @@ const ClientHome = () => {
             <p className="text-muted-foreground">
               Suivez vos organisateurs préférés pour ne rien manquer
             </p>
-            <Button variant="outline">Voir les organisateurs</Button>
+            <Link to="/client/follows">
+              <Button variant="outline">Voir les organisateurs</Button>
+            </Link>
           </Card>
         </div>
       </div>

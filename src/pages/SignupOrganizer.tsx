@@ -6,9 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Music } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignupOrganizer = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,11 +25,78 @@ const SignupOrganizer = () => {
     termsAccepted: false,
     privacyAccepted: false,
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement organizer signup with Supabase
-    console.log("Organizer signup:", formData);
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.termsAccepted || !formData.privacyAccepted) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez accepter les conditions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    // First, sign up the user
+    const { error: signUpError } = await signUp(formData.email, formData.password, {
+      role: 'organizer',
+      terms_accepted: formData.termsAccepted,
+      privacy_accepted: formData.privacyAccepted,
+    });
+
+    if (signUpError) {
+      toast({
+        title: "Erreur d'inscription",
+        description: signUpError.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Then create the organizer profile
+    const { data: userData } = await supabase.auth.getUser();
+    
+    if (userData.user) {
+      const { error: orgError } = await supabase
+        .from('organizers')
+        .insert({
+          owner_user_id: userData.user.id,
+          name: formData.organizerName,
+          slug: formData.slug,
+          phone: formData.phone || null,
+          siret: formData.siret || null,
+        });
+
+      if (orgError) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de créer le profil organisateur",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    toast({
+      title: "Compte créé",
+      description: "Bienvenue sur Sound !",
+    });
+    navigate("/orga/home");
   };
 
   return (
@@ -85,15 +157,17 @@ const SignupOrganizer = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="siret">SIRET</Label>
+            <Label htmlFor="siret">SIRET (optionnel)</Label>
             <Input
               id="siret"
               placeholder="123 456 789 00012"
               value={formData.siret}
               onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
-              required
               className="h-11"
             />
+            <p className="text-xs text-muted-foreground">
+              Vous pourrez l'ajouter plus tard
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -183,9 +257,9 @@ const SignupOrganizer = () => {
             variant="accent"
             className="w-full"
             size="lg"
-            disabled={!formData.termsAccepted || !formData.privacyAccepted}
+            disabled={!formData.termsAccepted || !formData.privacyAccepted || loading}
           >
-            Créer mon compte organisateur
+            {loading ? "Création..." : "Créer mon compte organisateur"}
           </Button>
         </form>
 
