@@ -21,6 +21,7 @@ export type Database = {
           artists: string[] | null
           created_at: string | null
           gender: string | null
+          last_survey_at: string | null
           nationality: string | null
           onboarding_completed_at: string | null
           region: string | null
@@ -33,6 +34,7 @@ export type Database = {
           artists?: string[] | null
           created_at?: string | null
           gender?: string | null
+          last_survey_at?: string | null
           nationality?: string | null
           onboarding_completed_at?: string | null
           region?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           artists?: string[] | null
           created_at?: string | null
           gender?: string | null
+          last_survey_at?: string | null
           nationality?: string | null
           onboarding_completed_at?: string | null
           region?: string | null
@@ -362,6 +365,137 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_devices: {
+        Row: {
+          created_at: string | null
+          device_key: string
+          id: string
+          last_seen: string | null
+          name: string
+          organizer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_key: string
+          id?: string
+          last_seen?: string | null
+          name: string
+          organizer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_key?: string
+          id?: string
+          last_seen?: string | null
+          name?: string
+          organizer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_devices_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_logs: {
+        Row: {
+          details: Json | null
+          device_id: string | null
+          event_id: string
+          id: string
+          result: string
+          scanned_at: string | null
+          session_id: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          details?: Json | null
+          device_id?: string | null
+          event_id: string
+          id?: string
+          result: string
+          scanned_at?: string | null
+          session_id?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          details?: Json | null
+          device_id?: string | null
+          event_id?: string
+          id?: string
+          result?: string
+          scanned_at?: string | null
+          session_id?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_sessions: {
+        Row: {
+          created_by: string
+          device_id: string
+          ends_at: string | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+          organizer_id: string
+          started_at: string | null
+        }
+        Insert: {
+          created_by: string
+          device_id: string
+          ends_at?: string | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+          organizer_id: string
+          started_at?: string | null
+        }
+        Update: {
+          created_by?: string
+          device_id?: string
+          ends_at?: string | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+          organizer_id?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "scan_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_sessions_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           event_id: string
@@ -455,6 +589,10 @@ export type Database = {
         Returns: boolean
       }
       is_email_confirmed: { Args: { uid: string }; Returns: boolean }
+      validate_ticket: {
+        Args: { p_device_key: string; p_event_id: string; p_qr_token: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "client" | "organizer" | "scan_agent" | "admin"

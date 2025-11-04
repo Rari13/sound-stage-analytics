@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Music } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { data, error } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -35,11 +36,32 @@ const Login = () => {
         variant: "destructive",
       });
       setLoading(false);
+      return;
+    }
+
+    // Check email verification
+    if (!data.user?.email_confirmed_at) {
+      navigate("/verify-email");
+      return;
+    }
+
+    // Get user role and redirect
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .single();
+
+    toast({
+      title: "Connexion réussie",
+      description: "Bienvenue !",
+    });
+
+    if (roleData?.role === 'client') {
+      navigate("/client/home");
+    } else if (roleData?.role === 'organizer') {
+      navigate("/orga/home");
     } else {
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue !",
-      });
       navigate("/");
     }
   };

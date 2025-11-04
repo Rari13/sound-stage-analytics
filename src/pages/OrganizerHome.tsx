@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3 } from "lucide-react";
+import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3, Scan } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const OrganizerHome = () => {
   return (
@@ -12,10 +13,20 @@ const OrganizerHome = () => {
             <h1 className="text-4xl font-bold mb-2">Tableau de bord</h1>
             <p className="text-muted-foreground">Vue d'ensemble de votre activité</p>
           </div>
-          <Button variant="hero" size="lg">
-            <Plus className="mr-2" />
-            Nouvel événement
-          </Button>
+          <div className="flex gap-3">
+            <Link to="/orga/scan">
+              <Button variant="outline" size="lg">
+                <Scan className="mr-2 h-5 w-5" />
+                Scanner
+              </Button>
+            </Link>
+            <Link to="/orga/events/create">
+              <Button variant="hero" size="lg">
+                <Plus className="mr-2" />
+                Nouvel événement
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -81,9 +92,11 @@ const OrganizerHome = () => {
                 <p className="text-muted-foreground">Configurez et publiez votre prochain événement</p>
               </div>
             </div>
-            <Button variant="default" size="lg" className="w-full">
-              Commencer
-            </Button>
+            <Link to="/orga/events/create">
+              <Button variant="default" size="lg" className="w-full">
+                Commencer
+              </Button>
+            </Link>
           </Card>
 
           <Card className="p-8 space-y-6 hover:shadow-accent-glow transition-base">
@@ -119,10 +132,12 @@ const OrganizerHome = () => {
               <p className="text-muted-foreground mb-6">
                 Créez votre premier événement pour commencer
               </p>
-              <Button variant="hero">
-                <Plus className="mr-2" />
-                Créer un événement
-              </Button>
+              <Link to="/orga/events/create">
+                <Button variant="hero">
+                  <Plus className="mr-2" />
+                  Créer un événement
+                </Button>
+              </Link>
             </div>
           </div>
         </Card>

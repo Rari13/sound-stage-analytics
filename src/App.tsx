@@ -11,6 +11,9 @@ import OrganizerHome from "./pages/OrganizerHome";
 import EventsBrowse from "./pages/EventsBrowse";
 import ClientTickets from "./pages/ClientTickets";
 import ClientFollows from "./pages/ClientFollows";
+import VerifyEmail from "./pages/VerifyEmail";
+import OrganizerScan from "./pages/OrganizerScan";
+import EventCreate from "./pages/EventCreate";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -22,6 +25,7 @@ const App = () => (
         <Route path="/login" element={<Login />} />
         <Route path="/signup-client" element={<SignupClient />} />
         <Route path="/signup-organizer" element={<SignupOrganizer />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/events/browse" element={<EventsBrowse />} />
         <Route 
           path="/client/home" 
@@ -52,6 +56,22 @@ const App = () => (
           element={
             <ProtectedRoute requireRole="organizer">
               <OrganizerHome />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/orga/scan" 
+          element={
+            <ProtectedRoute requireRole="organizer">
+              <OrganizerScan />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/orga/events/create" 
+          element={
+            <ProtectedRoute requireRole="organizer">
+              <EventCreate />
             </ProtectedRoute>
           } 
         />
