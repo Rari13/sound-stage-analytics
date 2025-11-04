@@ -1,0 +1,101 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Music } from "lucide-react";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement authentication
+    console.log("Login attempt:", { email });
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 space-y-6 shadow-strong">
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-hero flex items-center justify-center shadow-glow">
+              <Music className="h-8 w-8 text-primary-foreground" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold">Connexion</h1>
+          <p className="text-muted-foreground">
+            Accédez à votre compte Sound
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="votre@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+
+          <Button type="submit" className="w-full" size="lg">
+            Se connecter
+          </Button>
+        </form>
+
+        <div className="space-y-4 text-center text-sm">
+          <Link to="/forgot-password" className="text-primary hover:underline block">
+            Mot de passe oublié ?
+          </Link>
+          
+          <div className="pt-4 border-t border-border space-y-2">
+            <p className="text-muted-foreground">Vous n'avez pas de compte ?</p>
+            <div className="flex flex-col gap-2">
+              <Link to="/signup-client">
+                <Button variant="outline" className="w-full">
+                  Inscription Client
+                </Button>
+              </Link>
+              <Link to="/signup-organizer">
+                <Button variant="outline" className="w-full">
+                  Inscription Organisateur
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <Link to="/">
+            <Button variant="ghost" size="sm">
+              ← Retour à l'accueil
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default Login;
