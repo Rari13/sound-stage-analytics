@@ -9,6 +9,8 @@ import { Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
+import { supabase } from "@/integrations/supabase/client";
+
 const SignupClient = () => {
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
@@ -68,13 +70,23 @@ const SignupClient = () => {
         variant: "destructive",
       });
       setLoading(false);
-    } else {
-      toast({
-        title: "Compte créé",
-        description: "Vérifiez votre email pour confirmer votre compte",
-      });
-      navigate("/verify-email");
+      return;
     }
+
+    // Create user_roles entry
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      await supabase.from('user_roles').insert({
+        user_id: currentUser.id,
+        role: 'client'
+      });
+    }
+
+    toast({
+      title: "Compte créé avec succès",
+      description: "Vous êtes maintenant connecté !",
+    });
+    navigate("/client/home");
   };
 
   return (

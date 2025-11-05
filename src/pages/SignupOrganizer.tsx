@@ -67,10 +67,16 @@ const SignupOrganizer = () => {
       return;
     }
 
-    // Then create the organizer profile
+    // Then create the organizer profile and user_roles entry
     const { data: userData } = await supabase.auth.getUser();
     
     if (userData.user) {
+      // Create user_roles entry
+      await supabase.from('user_roles').insert({
+        user_id: userData.user.id,
+        role: 'organizer'
+      });
+
       const { error: orgError } = await supabase
         .from('organizers')
         .insert({
@@ -93,10 +99,10 @@ const SignupOrganizer = () => {
     }
 
     toast({
-      title: "Compte créé",
-      description: "Vérifiez votre email pour confirmer votre compte",
+      title: "Compte créé avec succès",
+      description: "Vous êtes maintenant connecté !",
     });
-    navigate("/verify-email");
+    navigate("/orga/home");
   };
 
   return (

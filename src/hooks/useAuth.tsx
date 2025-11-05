@@ -10,7 +10,6 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata: Record<string, any>) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
-  isEmailConfirmed: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +18,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEmailConfirmed, setIsEmailConfirmed] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -27,7 +25,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setIsEmailConfirmed(!!session?.user?.email_confirmed_at);
         
         if (event === 'SIGNED_OUT') {
           setLoading(false);
@@ -39,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsEmailConfirmed(!!session?.user?.email_confirmed_at);
       setLoading(false);
     });
 
@@ -81,8 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading, 
       signUp, 
       signIn, 
-      signOut,
-      isEmailConfirmed 
+      signOut
     }}>
       {children}
     </AuthContext.Provider>
