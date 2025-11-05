@@ -18,18 +18,18 @@ const Landing = () => {
               La plateforme de billetterie nouvelle génération pour les événements musicaux
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
-              <Link to="/signup-client">
-                <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                  <Users className="mr-2" />
-                  Je suis client
+                <Button asChild variant="hero" size="lg" className="w-full sm:w-auto" aria-label="Inscription client">
+                  <Link to="/signup-client">
+                    <Users className="mr-2" />
+                    Je suis client
+                  </Link>
                 </Button>
-              </Link>
-              <Link to="/signup-organizer">
-                <Button variant="accent" size="lg" className="w-full sm:w-auto">
+              <Button asChild variant="accent" size="lg" className="w-full sm:w-auto" aria-label="Inscription organisateur">
+                <Link to="/signup-organizer">
                   <Music className="mr-2" />
                   Je suis organisateur
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -86,16 +86,12 @@ const Landing = () => {
               Rejoignez Sound aujourd'hui et découvrez une nouvelle façon de gérer vos billets
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link to="/signup-client">
-                <Button size="lg" variant="default" className="w-full sm:w-auto">
-                  Créer un compte
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Se connecter
-                </Button>
-              </Link>
+              <Button asChild size="lg" variant="default" className="w-full sm:w-auto" aria-label="Créer un compte">
+                <Link to="/signup-client">Créer un compte</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto" aria-label="Se connecter">
+                <Link to="/login">Se connecter</Link>
+              </Button>
             </div>
           </Card>
         </div>
