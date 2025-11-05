@@ -1,6 +1,6 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -19,65 +19,63 @@ import NotFound from "./pages/NotFound";
 const App = () => (
   <TooltipProvider>
     <Sonner />
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup-client" element={<SignupClient />} />
-        <Route path="/signup-organizer" element={<SignupOrganizer />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/events/browse" element={<EventsBrowse />} />
-        <Route 
-          path="/client/home" 
-          element={
-            <ProtectedRoute requireRole="client">
-              <ClientHome />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/client/tickets" 
-          element={
-            <ProtectedRoute requireRole="client">
-              <ClientTickets />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/client/follows" 
-          element={
-            <ProtectedRoute requireRole="client">
-              <ClientFollows />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/orga/home" 
-          element={
-            <ProtectedRoute requireRole="organizer">
-              <OrganizerHome />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/orga/scan" 
-          element={
-            <ProtectedRoute requireRole="organizer">
-              <OrganizerScan />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/orga/events/create" 
-          element={
-            <ProtectedRoute requireRole="organizer">
-              <EventCreate />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup-client" element={<SignupClient />} />
+      <Route path="/signup-organizer" element={<SignupOrganizer />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/events/browse" element={<EventsBrowse />} />
+      <Route 
+        path="/client/home" 
+        element={
+          <ProtectedRoute requireRole="client">
+            <ClientHome />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/tickets" 
+        element={
+          <ProtectedRoute requireRole="client">
+            <ClientTickets />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/follows" 
+        element={
+          <ProtectedRoute requireRole="client">
+            <ClientFollows />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/home" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerHome />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/scan" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerScan />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/events/create" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <EventCreate />
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   </TooltipProvider>
 );
 
