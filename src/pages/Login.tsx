@@ -39,11 +39,7 @@ const Login = () => {
       return;
     }
 
-    // Check email verification
-    if (!data.user?.email_confirmed_at) {
-      navigate("/verify-email");
-      return;
-    }
+    // Email verification disabled for now
 
     // Get user role and redirect
     const { data: roleData } = await supabase
