@@ -59,6 +59,7 @@ export type Database = {
       events: {
         Row: {
           address_line1: string | null
+          banner_url: string | null
           capacity: number | null
           city: string
           country: string | null
@@ -84,6 +85,7 @@ export type Database = {
         }
         Insert: {
           address_line1?: string | null
+          banner_url?: string | null
           capacity?: number | null
           city: string
           country?: string | null
@@ -109,6 +111,7 @@ export type Database = {
         }
         Update: {
           address_line1?: string | null
+          banner_url?: string | null
           capacity?: number | null
           city?: string
           country?: string | null

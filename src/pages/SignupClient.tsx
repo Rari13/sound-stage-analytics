@@ -71,9 +71,9 @@ const SignupClient = () => {
     } else {
       toast({
         title: "Compte créé",
-        description: "Bienvenue sur Sound !",
+        description: "Vérifiez votre email pour confirmer votre compte",
       });
-      navigate("/client/home");
+      navigate("/verify-email");
     }
   };
 

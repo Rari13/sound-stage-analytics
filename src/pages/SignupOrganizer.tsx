@@ -94,9 +94,9 @@ const SignupOrganizer = () => {
 
     toast({
       title: "Compte créé",
-      description: "Bienvenue sur Sound !",
+      description: "Vérifiez votre email pour confirmer votre compte",
     });
-    navigate("/orga/home");
+    navigate("/verify-email");
   };
 
   return (

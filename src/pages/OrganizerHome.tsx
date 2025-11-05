@@ -1,17 +1,76 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3, Scan } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3, Scan, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface Event {
+  id: string;
+  title: string;
+  banner_url: string | null;
+  starts_at: string;
+  city: string;
+  venue: string;
+  status: string;
+  slug: string;
+}
 
 const OrganizerHome = () => {
+  const { user } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!user) return;
+      
+      const { data: orgData } = await supabase
+        .from('organizers')
+        .select('id')
+        .eq('owner_user_id', user.id)
+        .single();
+
+      if (!orgData) return;
+
+      const { data } = await supabase
+        .from('events')
+        .select('id, title, banner_url, starts_at, city, venue, status, slug')
+        .eq('organizer_id', orgData.id)
+        .order('starts_at', { ascending: false });
+
+      if (data) setEvents(data);
+      setLoading(false);
+    };
+
+    fetchEvents();
+  }, [user]);
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      draft: "secondary",
+      published: "default",
+      cancelled: "destructive",
+    };
+    const labels: Record<string, string> = {
+      draft: "Brouillon",
+      published: "Publié",
+      cancelled: "Annulé",
+    };
+    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="container mx-auto max-w-7xl space-y-8">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-4xl font-bold mb-2">Tableau de bord</h1>
-            <p className="text-muted-foreground">Vue d'ensemble de votre activité</p>
+            <p className="text-muted-foreground">Gérez vos événements</p>
           </div>
           <div className="flex gap-3">
             <Link to="/orga/scan">
@@ -29,7 +88,6 @@ const OrganizerHome = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid md:grid-cols-4 gap-6">
           <Card className="p-6 space-y-2 hover:shadow-glow transition-base">
             <div className="flex items-center gap-3">
@@ -38,7 +96,7 @@ const OrganizerHome = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Événements</p>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">{events.length}</p>
               </div>
             </div>
           </Card>
@@ -80,94 +138,100 @@ const OrganizerHome = () => {
           </Card>
         </div>
 
-        {/* Main Actions */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-8 space-y-6 hover:shadow-glow transition-base">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center">
-                <Calendar className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Créer un événement</h3>
-                <p className="text-muted-foreground">Configurez et publiez votre prochain événement</p>
-              </div>
-            </div>
-            <Link to="/orga/events/create">
-              <Button variant="default" size="lg" className="w-full">
-                Commencer
-              </Button>
-            </Link>
-          </Card>
-
-          <Card className="p-8 space-y-6 hover:shadow-accent-glow transition-base">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-accent flex items-center justify-center">
-                <BarChart3 className="h-8 w-8 text-accent-foreground" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Business Intelligence</h3>
-                <p className="text-muted-foreground">Analysez vos performances et tendances</p>
-              </div>
-            </div>
-            <Button variant="accent" size="lg" className="w-full">
-              Voir les analyses
-            </Button>
-          </Card>
-        </div>
-
-        {/* Recent Events Section */}
         <Card className="p-8">
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Événements récents</h2>
-              <Button variant="outline">Voir tous</Button>
-            </div>
-            <div className="text-center py-12">
-              <div className="flex justify-center mb-4">
-                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
-                  <Calendar className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </div>
-              <p className="text-xl font-semibold mb-2">Aucun événement</p>
-              <p className="text-muted-foreground mb-6">
-                Créez votre premier événement pour commencer
-              </p>
+              <h2 className="text-2xl font-bold">Mes événements</h2>
               <Link to="/orga/events/create">
-                <Button variant="hero">
-                  <Plus className="mr-2" />
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
                   Créer un événement
                 </Button>
               </Link>
             </div>
+            
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="p-4">
+                    <div className="flex gap-4">
+                      <div className="w-32 h-20 bg-muted animate-pulse rounded" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-6 bg-muted animate-pulse rounded w-1/3" />
+                        <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : events.length > 0 ? (
+              <div className="space-y-4">
+                {events.map((event) => (
+                  <Card key={event.id} className="p-4 hover:shadow-glow transition-base">
+                    <div className="flex gap-4">
+                      {event.banner_url ? (
+                        <img 
+                          src={event.banner_url} 
+                          alt={event.title}
+                          className="w-32 h-20 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-32 h-20 bg-gradient-primary rounded flex items-center justify-center">
+                          <Calendar className="h-8 w-8 text-primary-foreground opacity-50" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-bold text-lg">{event.title}</h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(event.starts_at), "d MMMM yyyy • HH:mm", { locale: fr })}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              {event.venue}, {event.city}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(event.status)}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link to={`/events/${event.slug}`}>
+                            <Button variant="outline" size="sm">Voir</Button>
+                          </Link>
+                          <Button variant="outline" size="sm">Éditer</Button>
+                          {event.status === 'draft' && (
+                            <Button variant="default" size="sm">Publier</Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="flex justify-center mb-4">
+                  <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                    <Calendar className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-xl font-semibold mb-2">Aucun événement</p>
+                <p className="text-muted-foreground mb-6">
+                  Créez votre premier événement pour commencer
+                </p>
+                <Link to="/orga/events/create">
+                  <Button variant="hero">
+                    <Plus className="mr-2" />
+                    Créer un événement
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </Card>
-
-        {/* Quick Links */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="p-6 space-y-4 hover:shadow-soft transition-base">
-            <h3 className="text-lg font-bold">Mes événements</h3>
-            <p className="text-sm text-muted-foreground">
-              Gérez tous vos événements en un seul endroit
-            </p>
-            <Button variant="outline" className="w-full">Accéder</Button>
-          </Card>
-
-          <Card className="p-6 space-y-4 hover:shadow-soft transition-base">
-            <h3 className="text-lg font-bold">Configuration</h3>
-            <p className="text-sm text-muted-foreground">
-              Paramètres de paiement et informations légales
-            </p>
-            <Button variant="outline" className="w-full">Configurer</Button>
-          </Card>
-
-          <Card className="p-6 space-y-4 hover:shadow-soft transition-base">
-            <h3 className="text-lg font-bold">Page publique</h3>
-            <p className="text-sm text-muted-foreground">
-              Personnalisez votre page organisateur
-            </p>
-            <Button variant="outline" className="w-full">Voir</Button>
-          </Card>
-        </div>
       </div>
     </div>
   );

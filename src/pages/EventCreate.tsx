@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BannerUpload } from "@/components/BannerUpload";
+import { Plus, Trash2 } from "lucide-react";
+
+interface PriceTier {
+  name: string;
+  price_cents: number;
+  quota: number | null;
+  starts_at: string;
+  ends_at: string;
+}
 
 const EventCreate = () => {
   const { user } = useAuth();
@@ -16,6 +26,7 @@ const EventCreate = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [organizerId, setOrganizerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
@@ -24,7 +35,30 @@ const EventCreate = () => {
     city: "",
     starts_at: "",
     ends_at: "",
+    banner_url: null as string | null,
   });
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
+    {
+      name: "Tarif normal",
+      price_cents: 1000,
+      quota: null,
+      starts_at: "",
+      ends_at: "",
+    }
+  ]);
+
+  useEffect(() => {
+    const fetchOrganizer = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('organizers')
+        .select('id')
+        .eq('owner_user_id', user.id)
+        .single();
+      if (data) setOrganizerId(data.id);
+    };
+    fetchOrganizer();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +93,7 @@ const EventCreate = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    const { error } = await supabase
+    const { data: eventData, error } = await supabase
       .from('events')
       .insert({
         organizer_id: orgData.id,
@@ -72,7 +106,10 @@ const EventCreate = () => {
         ends_at: formData.ends_at || new Date(new Date(formData.starts_at).getTime() + 6 * 60 * 60 * 1000).toISOString(),
         slug: baseSlug + '-' + Date.now(),
         status: 'draft',
-      });
+        banner_url: formData.banner_url,
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -80,13 +117,35 @@ const EventCreate = () => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Événement créé",
-        description: "Vous pouvez maintenant le configurer",
-      });
-      navigate("/orga/home");
+      setLoading(false);
+      return;
     }
+
+    // Insert price tiers
+    if (eventData && priceTiers.length > 0) {
+      const { error: tiersError } = await supabase
+        .from('price_tiers')
+        .insert(
+          priceTiers.map(tier => ({
+            event_id: eventData.id,
+            name: tier.name,
+            price_cents: tier.price_cents,
+            quota: tier.quota,
+            starts_at: tier.starts_at || formData.starts_at,
+            ends_at: tier.ends_at || formData.ends_at || new Date(new Date(formData.starts_at).getTime() + 6 * 60 * 60 * 1000).toISOString(),
+          }))
+        );
+
+      if (tiersError) {
+        console.error("Error creating price tiers:", tiersError);
+      }
+    }
+
+    toast({
+      title: "Événement créé",
+      description: "Vous pouvez maintenant le publier",
+    });
+    navigate("/orga/home");
     setLoading(false);
   };
 
@@ -104,7 +163,18 @@ const EventCreate = () => {
         </div>
 
         <Card className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-2">
+              <Label>Bannière de l'événement</Label>
+              {organizerId && (
+                <BannerUpload
+                  value={formData.banner_url || undefined}
+                  onChange={(url) => setFormData({ ...formData, banner_url: url })}
+                  organizerId={organizerId}
+                />
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Titre de l'événement *</Label>
               <Input
@@ -183,6 +253,91 @@ const EventCreate = () => {
                 />
                 <p className="text-xs text-muted-foreground">Si vide, +6h par défaut</p>
               </div>
+            </div>
+
+            <div className="space-y-4 border-t border-border pt-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <Label className="text-lg">Tarifs et billetterie</Label>
+                  <p className="text-sm text-muted-foreground">Configurez vos différents tarifs</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPriceTiers([...priceTiers, {
+                    name: `Tarif ${priceTiers.length + 1}`,
+                    price_cents: 1000,
+                    quota: null,
+                    starts_at: "",
+                    ends_at: "",
+                  }])}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter un tarif
+                </Button>
+              </div>
+
+              {priceTiers.map((tier, index) => (
+                <Card key={index} className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium">Tarif {index + 1}</h4>
+                      {priceTiers.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setPriceTiers(priceTiers.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nom du tarif</Label>
+                        <Input
+                          value={tier.name}
+                          onChange={(e) => {
+                            const newTiers = [...priceTiers];
+                            newTiers[index].name = e.target.value;
+                            setPriceTiers(newTiers);
+                          }}
+                          placeholder="Early Bird"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Prix (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={tier.price_cents / 100}
+                          onChange={(e) => {
+                            const newTiers = [...priceTiers];
+                            newTiers[index].price_cents = Math.round(parseFloat(e.target.value) * 100);
+                            setPriceTiers(newTiers);
+                          }}
+                          placeholder="10.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Stock (optionnel)</Label>
+                        <Input
+                          type="number"
+                          value={tier.quota || ""}
+                          onChange={(e) => {
+                            const newTiers = [...priceTiers];
+                            newTiers[index].quota = e.target.value ? parseInt(e.target.value) : null;
+                            setPriceTiers(newTiers);
+                          }}
+                          placeholder="100"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
 
             <Button type="submit" disabled={loading} className="w-full" variant="hero" size="lg">
