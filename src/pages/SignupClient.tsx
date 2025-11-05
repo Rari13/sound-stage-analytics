@@ -73,14 +73,7 @@ const SignupClient = () => {
       return;
     }
 
-    // Create user_roles entry
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser) {
-      await supabase.from('user_roles').insert({
-        user_id: currentUser.id,
-        role: 'client'
-      });
-    }
+    // user_roles entry is automatically created by the handle_new_user() trigger
 
     toast({
       title: "Compte créé avec succès",

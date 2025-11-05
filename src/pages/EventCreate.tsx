@@ -63,8 +63,8 @@ const EventCreate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !isEmailConfirmed) {
-      navigate("/verify-email");
+    if (!user) {
+      navigate("/login");
       return;
     }
 

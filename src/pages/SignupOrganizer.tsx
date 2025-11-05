@@ -67,16 +67,11 @@ const SignupOrganizer = () => {
       return;
     }
 
-    // Then create the organizer profile and user_roles entry
+    // user_roles entry is automatically created by the handle_new_user() trigger
+    // Now create the organizer profile
     const { data: userData } = await supabase.auth.getUser();
     
     if (userData.user) {
-      // Create user_roles entry
-      await supabase.from('user_roles').insert({
-        user_id: userData.user.id,
-        role: 'organizer'
-      });
-
       const { error: orgError } = await supabase
         .from('organizers')
         .insert({
@@ -149,14 +144,13 @@ const SignupOrganizer = () => {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
+              <Label htmlFor="phone">Téléphone (optionnel)</Label>
               <Input
                 id="phone"
                 type="tel"
                 placeholder="+33 6 12 34 56 78"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
                 className="h-11"
               />
             </div>
