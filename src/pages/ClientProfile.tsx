@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Music } from "lucide-react";
+import { ArrowLeft, MapPin, Music, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ const ClientProfile = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [geolocating, setGeolocating] = useState(false);
   
   const [city, setCity] = useState("");
   const [maxDistance, setMaxDistance] = useState(50);
@@ -52,6 +53,82 @@ const ClientProfile = () => {
       prev.includes(genre)
         ? prev.filter(g => g !== genre)
         : [...prev, genre]
+    );
+  };
+
+  const handleGetLocation = async () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Erreur",
+        description: "La géolocalisation n'est pas supportée par votre navigateur",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeolocating(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Reverse geocoding using OpenStreetMap Nominatim
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=fr`
+          );
+          const data = await response.json();
+          
+          const cityName = data.address.city || data.address.town || data.address.village || "";
+          
+          if (cityName) {
+            setCity(cityName);
+            
+            // Save coordinates to database
+            await supabase
+              .from('client_profiles')
+              .update({
+                latitude,
+                longitude,
+                city: cityName
+              } as any)
+              .eq('user_id', user?.id);
+            
+            toast({
+              title: "Position détectée",
+              description: `Votre ville : ${cityName}`,
+            });
+          } else {
+            toast({
+              title: "Erreur",
+              description: "Impossible de déterminer votre ville",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Erreur",
+            description: "Erreur lors de la récupération de l'adresse",
+            variant: "destructive",
+          });
+        }
+        
+        setGeolocating(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la récupération de votre position",
+          variant: "destructive",
+        });
+        setGeolocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
     );
   };
 
@@ -117,16 +194,32 @@ const ClientProfile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="city">Ville</Label>
-              <Input
-                id="city"
-                placeholder="Ex: Paris, Lyon, Marseille..."
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Nous vous suggérerons des événements dans cette ville et ses environs
+              <div className="flex gap-2">
+                <Input
+                  id="city"
+                  placeholder="Ex: Paris, Lyon, Marseille..."
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGetLocation}
+                  disabled={geolocating}
+                >
+                  {geolocating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MapPin className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Nous vous suggérerons des événements dans cette ville et ses environs. 
+                Cliquez sur l'icône pour détecter votre position automatiquement.
               </p>
             </div>
             <div>
