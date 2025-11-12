@@ -2,9 +2,21 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Search, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Search, ArrowLeft, Filter, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const MUSIC_GENRES = [
+  "Hip-Hop", "Rap", "R&B", "Pop", "Rock", "Électro", "Techno", "House",
+  "Jazz", "Reggae", "Soul", "Funk", "Metal", "Indie", "Afrobeat", "Dancehall"
+];
 
 interface Event {
   id: string;
@@ -22,6 +34,9 @@ const EventsBrowse = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -42,10 +57,34 @@ const EventsBrowse = () => {
     setLoading(false);
   };
 
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEvents = events
+    .filter(event => {
+      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.city.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesGenre = !selectedGenre || 
+        (event.music_genres && event.music_genres.includes(selectedGenre));
+      
+      return matchesSearch && matchesGenre;
+    })
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
+      } else if (sortBy === "recent") {
+        return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime();
+      } else if (sortBy === "city") {
+        return a.city.localeCompare(b.city);
+      }
+      return 0;
+    });
+
+  const clearFilters = () => {
+    setSelectedGenre("");
+    setSortBy("date");
+    setSearchTerm("");
+  };
+
+  const hasActiveFilters = selectedGenre || sortBy !== "date" || searchTerm;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -60,8 +99,8 @@ const EventsBrowse = () => {
             Retour
           </Button>
           <h1 className="text-4xl font-bold">Découvrir les événements</h1>
-          <div className="flex gap-4">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder="Rechercher par nom ou ville..."
@@ -70,7 +109,68 @@ const EventsBrowse = () => {
                 className="pl-10 h-12"
               />
             </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-12"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtres
+              {hasActiveFilters && (
+                <span className="ml-2 px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
+                  •
+                </span>
+              )}
+            </Button>
           </div>
+
+          {showFilters && (
+            <Card className="p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Genre musical</label>
+                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les genres" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tous les genres</SelectItem>
+                      {MUSIC_GENRES.map((genre) => (
+                        <SelectItem key={genre} value={genre}>
+                          {genre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">Trier par</label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date (plus proche)</SelectItem>
+                      <SelectItem value="recent">Date (plus récent)</SelectItem>
+                      <SelectItem value="city">Ville (A-Z)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {hasActiveFilters && (
+                  <div className="flex items-end">
+                    <Button
+                      variant="ghost"
+                      onClick={clearFilters}
+                      className="h-10"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Réinitialiser
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
 
         {loading ? (
