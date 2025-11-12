@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserMinus } from "lucide-react";
+import { Users, UserMinus, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface FollowWithOrganizer {
@@ -19,6 +19,7 @@ interface FollowWithOrganizer {
 }
 
 const ClientFollows = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [follows, setFollows] = useState<FollowWithOrganizer[]>([]);
@@ -69,6 +70,14 @@ const ClientFollows = () => {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="container mx-auto max-w-4xl space-y-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold">Organisateurs suivis</h1>
           <Link to="/events/browse">
