@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3, Scan, MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;
@@ -22,8 +23,11 @@ interface Event {
 
 const OrganizerHome = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -49,6 +53,34 @@ const OrganizerHome = () => {
 
     fetchEvents();
   }, [user]);
+
+  const handlePublish = async (eventId: string) => {
+    setPublishing(eventId);
+    const { error } = await supabase
+      .from('events')
+      .update({ status: 'published' })
+      .eq('id', eventId);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de publier l'événement",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Événement publié",
+        description: "Votre événement est maintenant visible par tous",
+      });
+      // Refresh events list
+      setEvents(events.map(e => e.id === eventId ? { ...e, status: 'published' } : e));
+    }
+    setPublishing(null);
+  };
+
+  const handleEdit = (eventId: string) => {
+    navigate(`/orga/events/edit/${eventId}`);
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -201,9 +233,22 @@ const OrganizerHome = () => {
                           <Link to={`/events/${event.slug}`}>
                             <Button variant="outline" size="sm">Voir</Button>
                           </Link>
-                          <Button variant="outline" size="sm">Éditer</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEdit(event.id)}
+                          >
+                            Éditer
+                          </Button>
                           {event.status === 'draft' && (
-                            <Button variant="default" size="sm">Publier</Button>
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => handlePublish(event.id)}
+                              disabled={publishing === event.id}
+                            >
+                              {publishing === event.id ? "Publication..." : "Publier"}
+                            </Button>
                           )}
                         </div>
                       </div>

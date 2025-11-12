@@ -14,6 +14,8 @@ import ClientFollows from "./pages/ClientFollows";
 import VerifyEmail from "./pages/VerifyEmail";
 import OrganizerScan from "./pages/OrganizerScan";
 import EventCreate from "./pages/EventCreate";
+import EventEdit from "./pages/EventEdit";
+import EventDetails from "./pages/EventDetails";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -74,6 +76,15 @@ const App = () => (
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/orga/events/edit/:eventId" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <EventEdit />
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="/events/:slug" element={<EventDetails />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </TooltipProvider>

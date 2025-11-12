@@ -1,0 +1,198 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, MapPin, Clock, ArrowLeft, Users, Euro } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface Event {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  banner_url: string | null;
+  starts_at: string;
+  ends_at: string;
+  city: string;
+  venue: string;
+  status: string;
+  capacity: number | null;
+}
+
+interface PriceTier {
+  id: string;
+  name: string;
+  price_cents: number;
+  quota: number | null;
+}
+
+const EventDetails = () => {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventDetails = async () => {
+      if (!slug) return;
+
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (eventError || !eventData) {
+        setLoading(false);
+        return;
+      }
+
+      setEvent(eventData);
+
+      const { data: tiersData } = await supabase
+        .from('price_tiers')
+        .select('id, name, price_cents, quota')
+        .eq('event_id', eventData.id)
+        .order('price_cents');
+
+      if (tiersData) {
+        setPriceTiers(tiersData);
+      }
+
+      setLoading(false);
+    };
+
+    fetchEventDetails();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <h1 className="text-2xl font-bold mb-4">Événement introuvable</h1>
+        <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <div className="relative h-96 overflow-hidden">
+        {event.banner_url ? (
+          <img 
+            src={event.banner_url} 
+            alt={event.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
+            <Calendar className="h-24 w-24 text-primary-foreground opacity-50" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      <div className="container mx-auto max-w-4xl px-4 -mt-32 relative z-10">
+        <Button 
+          variant="ghost" 
+          className="mb-6 bg-background/80 backdrop-blur-sm"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour
+        </Button>
+
+        <Card className="p-8 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold mb-2">{event.title}</h1>
+                {event.subtitle && (
+                  <p className="text-xl text-muted-foreground">{event.subtitle}</p>
+                )}
+              </div>
+              <Badge variant={event.status === 'published' ? 'default' : 'secondary'}>
+                {event.status === 'published' ? 'Publié' : 'Brouillon'}
+              </Badge>
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                <span>{format(new Date(event.starts_at), "d MMMM yyyy", { locale: fr })}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                <span>
+                  {format(new Date(event.starts_at), "HH:mm", { locale: fr })} - {format(new Date(event.ends_at), "HH:mm", { locale: fr })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                <span>{event.venue}, {event.city}</span>
+              </div>
+              {event.capacity && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  <span>{event.capacity} places</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {event.description && (
+            <div className="pt-6 border-t">
+              <h2 className="text-2xl font-bold mb-4">À propos</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+            </div>
+          )}
+
+          {priceTiers.length > 0 && (
+            <div className="pt-6 border-t">
+              <h2 className="text-2xl font-bold mb-4">Tarifs</h2>
+              <div className="grid gap-4">
+                {priceTiers.map((tier) => (
+                  <Card key={tier.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-semibold">{tier.name}</h3>
+                        {tier.quota && (
+                          <p className="text-sm text-muted-foreground">{tier.quota} places disponibles</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-2xl font-bold">
+                        <Euro className="h-6 w-6" />
+                        {(tier.price_cents / 100).toFixed(2)}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {event.status === 'published' && (
+            <div className="pt-6 border-t">
+              <Button className="w-full" size="lg">
+                Réserver mes billets
+              </Button>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default EventDetails;
