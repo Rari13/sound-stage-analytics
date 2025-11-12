@@ -36,12 +36,13 @@ const ClientProfile = () => {
       .from('client_profiles')
       .select('city, max_distance_km, preferred_genres')
       .eq('user_id', user?.id)
-      .single();
+      .maybeSingle();
 
     if (!error && data) {
-      setCity(data.city || "");
-      setMaxDistance(data.max_distance_km || 50);
-      setSelectedGenres(data.preferred_genres || []);
+      const profileData = data as any;
+      setCity(profileData.city || "");
+      setMaxDistance(profileData.max_distance_km || 50);
+      setSelectedGenres(profileData.preferred_genres || []);
     }
     setLoading(false);
   };
@@ -62,7 +63,7 @@ const ClientProfile = () => {
         city,
         max_distance_km: maxDistance,
         preferred_genres: selectedGenres
-      })
+      } as any)
       .eq('user_id', user?.id);
 
     if (error) {

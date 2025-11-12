@@ -19,6 +19,8 @@ interface Event {
   slug: string;
   music_genres: string[] | null;
   published_at: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const ClientHome = () => {
@@ -26,9 +28,12 @@ const ClientHome = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
   const [userPreferences, setUserPreferences] = useState<{
     city: string | null;
     preferred_genres: string[] | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null>(null);
 
   useEffect(() => {
@@ -43,52 +48,102 @@ const ClientHome = () => {
     }
   }, [userPreferences]);
 
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
   const fetchUserPreferences = async () => {
     const { data } = await supabase
       .from('client_profiles')
-      .select('city, preferred_genres')
+      .select('city, preferred_genres, latitude, longitude')
       .eq('user_id', user?.id)
-      .single();
+      .maybeSingle();
 
-    setUserPreferences(data || { city: null, preferred_genres: null });
+    setUserPreferences(data as any || { city: null, preferred_genres: null, latitude: null, longitude: null });
   };
 
   const fetchEvents = async () => {
-    let query = supabase
-      .from('events')
-      .select('id, title, subtitle, banner_url, starts_at, city, venue, slug, music_genres, published_at')
-      .eq('status', 'published')
-      .gte('starts_at', new Date().toISOString());
+    // Count upcoming events (followed organizers + purchased tickets)
+    const { data: followedOrganizers } = await supabase
+      .from('follows')
+      .select('organizer_id')
+      .eq('user_id', user?.id || '');
 
-    // Filter by city if user has preferences
-    if (userPreferences?.city) {
-      query = query.ilike('city', `%${userPreferences.city}%`);
+    const { data: ticketEvents } = await supabase
+      .from('tickets')
+      .select('event_id')
+      .eq('user_id', user?.id || '');
+
+    const followedOrganizerIds = followedOrganizers?.map(f => f.organizer_id) || [];
+    const ticketEventIds = ticketEvents?.map(t => t.event_id) || [];
+
+    if (followedOrganizerIds.length > 0 || ticketEventIds.length > 0) {
+      const { count } = await supabase
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'published')
+        .gte('starts_at', new Date().toISOString())
+        .or(`organizer_id.in.(${followedOrganizerIds.join(',')}),id.in.(${ticketEventIds.join(',')})`);
+      
+      setUpcomingEventsCount(count || 0);
+    } else {
+      setUpcomingEventsCount(0);
     }
 
-    // Sort by published date (newest first) then by start date
-    query = query
-      .order('published_at', { ascending: false, nullsFirst: false })
+    // Fetch all events
+    let query = supabase
+      .from('events')
+      .select('id, title, subtitle, banner_url, starts_at, city, venue, slug, music_genres, published_at, latitude, longitude')
+      .eq('status', 'published')
+      .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
-      .limit(12);
+      .limit(24);
 
     const { data } = await query;
 
     if (data) {
-      // If user has genre preferences, boost events matching those genres
+      let processedEvents = [...(data as any[])];
+
+      // Sort by proximity if user has location
+      if (userPreferences?.latitude && userPreferences?.longitude) {
+        processedEvents = processedEvents
+          .map((event: any) => {
+            if (event.latitude && event.longitude) {
+              const distance = calculateDistance(
+                userPreferences.latitude!,
+                userPreferences.longitude!,
+                event.latitude,
+                event.longitude
+              );
+              return { ...event, distance };
+            }
+            return { ...event, distance: 9999 };
+          })
+          .sort((a: any, b: any) => a.distance - b.distance);
+      }
+
+      // Boost events matching preferred genres
       if (userPreferences?.preferred_genres && userPreferences.preferred_genres.length > 0) {
-        const sortedEvents = data.sort((a, b) => {
-          const aMatches = a.music_genres?.filter(g => 
+        processedEvents = processedEvents.sort((a: any, b: any) => {
+          const aMatches = a.music_genres?.filter((g: string) => 
             userPreferences.preferred_genres?.includes(g)
           ).length || 0;
-          const bMatches = b.music_genres?.filter(g => 
+          const bMatches = b.music_genres?.filter((g: string) => 
             userPreferences.preferred_genres?.includes(g)
           ).length || 0;
           return bMatches - aMatches;
         });
-        setEvents(sortedEvents);
-      } else {
-        setEvents(data);
       }
+
+      setEvents(processedEvents.slice(0, 12) as Event[]);
     }
     setLoading(false);
   };
@@ -144,7 +199,7 @@ const ClientHome = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Événements à venir</p>
-                <p className="text-2xl font-bold">{events.length}</p>
+                <p className="text-2xl font-bold">{upcomingEventsCount}</p>
               </div>
             </div>
           </Card>
@@ -167,8 +222,8 @@ const ClientHome = () => {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">
-              {userPreferences?.preferred_genres && userPreferences.preferred_genres.length > 0
-                ? "Recommandé pour vous"
+              {userPreferences?.city 
+                ? `Les événements les plus populaires à ${userPreferences.city}`
                 : "Nouveaux événements"}
             </h2>
             <Link to="/events/browse">
