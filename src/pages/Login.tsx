@@ -11,17 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, user, signOut } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +56,28 @@ const Login = () => {
       navigate("/");
     }
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: "Déconnecté", description: "Vous pouvez maintenant vous reconnecter." });
+  };
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 space-y-6 shadow-strong">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold">Déjà connecté</h1>
+            <p className="text-muted-foreground">Vous êtes déjà connecté. Vous pouvez aller à l’accueil ou vous déconnecter pour changer de compte.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button className="flex-1" onClick={() => navigate('/')}>Aller à l’accueil</Button>
+            <Button variant="outline" className="flex-1" onClick={handleSignOut}>Se déconnecter</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
