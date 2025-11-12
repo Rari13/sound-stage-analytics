@@ -34,7 +34,7 @@ const EventsBrowse = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -62,7 +62,7 @@ const EventsBrowse = () => {
       const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.city.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesGenre = !selectedGenre || 
+      const matchesGenre = selectedGenre === "all" || 
         (event.music_genres && event.music_genres.includes(selectedGenre));
       
       return matchesSearch && matchesGenre;
@@ -79,12 +79,12 @@ const EventsBrowse = () => {
     });
 
   const clearFilters = () => {
-    setSelectedGenre("");
+    setSelectedGenre("all");
     setSortBy("date");
     setSearchTerm("");
   };
 
-  const hasActiveFilters = selectedGenre || sortBy !== "date" || searchTerm;
+  const hasActiveFilters = selectedGenre !== "all" || sortBy !== "date" || searchTerm;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -134,7 +134,7 @@ const EventsBrowse = () => {
                       <SelectValue placeholder="Tous les genres" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les genres</SelectItem>
+                      <SelectItem value="all">Tous les genres</SelectItem>
                       {MUSIC_GENRES.map((genre) => (
                         <SelectItem key={genre} value={genre}>
                           {genre}
