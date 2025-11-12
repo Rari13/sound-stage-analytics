@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import SignupClient from "./pages/SignupClient";
 import SignupOrganizer from "./pages/SignupOrganizer";
 import ClientHome from "./pages/ClientHome";
+import ClientProfile from "./pages/ClientProfile";
 import OrganizerHome from "./pages/OrganizerHome";
 import EventsBrowse from "./pages/EventsBrowse";
 import ClientTickets from "./pages/ClientTickets";
@@ -37,7 +38,15 @@ const App = () => (
         } 
       />
       <Route 
-        path="/client/tickets" 
+        path="/client/profile" 
+        element={
+          <ProtectedRoute requireRole="client">
+            <ClientProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/tickets"
         element={
           <ProtectedRoute requireRole="client">
             <ClientTickets />

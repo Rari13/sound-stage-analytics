@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Ticket, Calendar, Heart, User, MapPin } from "lucide-react";
+import { Ticket, Calendar, Heart, User, MapPin, Settings } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,30 +17,81 @@ interface Event {
   city: string;
   venue: string;
   slug: string;
+  music_genres: string[] | null;
+  published_at: string | null;
 }
 
 const ClientHome = () => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPreferences, setUserPreferences] = useState<{
+    city: string | null;
+    preferred_genres: string[] | null;
+  } | null>(null);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      const { data } = await supabase
-        .from('events')
-        .select('id, title, subtitle, banner_url, starts_at, city, venue, slug')
-        .eq('status', 'published')
-        .gte('starts_at', new Date().toISOString())
-        .order('starts_at', { ascending: true })
-        .limit(6);
+    if (user) {
+      fetchUserPreferences();
+    }
+  }, [user]);
 
-      if (data) setEvents(data);
-      setLoading(false);
-    };
+  useEffect(() => {
+    if (userPreferences !== null) {
+      fetchEvents();
+    }
+  }, [userPreferences]);
 
-    fetchEvents();
-  }, []);
+  const fetchUserPreferences = async () => {
+    const { data } = await supabase
+      .from('client_profiles')
+      .select('city, preferred_genres')
+      .eq('user_id', user?.id)
+      .single();
+
+    setUserPreferences(data || { city: null, preferred_genres: null });
+  };
+
+  const fetchEvents = async () => {
+    let query = supabase
+      .from('events')
+      .select('id, title, subtitle, banner_url, starts_at, city, venue, slug, music_genres, published_at')
+      .eq('status', 'published')
+      .gte('starts_at', new Date().toISOString());
+
+    // Filter by city if user has preferences
+    if (userPreferences?.city) {
+      query = query.ilike('city', `%${userPreferences.city}%`);
+    }
+
+    // Sort by published date (newest first) then by start date
+    query = query
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('starts_at', { ascending: true })
+      .limit(12);
+
+    const { data } = await query;
+
+    if (data) {
+      // If user has genre preferences, boost events matching those genres
+      if (userPreferences?.preferred_genres && userPreferences.preferred_genres.length > 0) {
+        const sortedEvents = data.sort((a, b) => {
+          const aMatches = a.music_genres?.filter(g => 
+            userPreferences.preferred_genres?.includes(g)
+          ).length || 0;
+          const bMatches = b.music_genres?.filter(g => 
+            userPreferences.preferred_genres?.includes(g)
+          ).length || 0;
+          return bMatches - aMatches;
+        });
+        setEvents(sortedEvents);
+      } else {
+        setEvents(data);
+      }
+    }
+    setLoading(false);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,11 +104,22 @@ const ClientHome = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold mb-2">Découvrir</h1>
-            <p className="text-muted-foreground">Les meilleurs événements près de chez vous</p>
+            <p className="text-muted-foreground">
+              {userPreferences?.city 
+                ? `Les meilleurs événements à ${userPreferences.city}` 
+                : "Les meilleurs événements près de chez vous"}
+            </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <User className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Link to="/client/profile">
+              <Button variant="outline" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <User className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -104,7 +166,11 @@ const ClientHome = () => {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Événements à venir</h2>
+            <h2 className="text-2xl font-bold">
+              {userPreferences?.preferred_genres && userPreferences.preferred_genres.length > 0
+                ? "Recommandé pour vous"
+                : "Nouveaux événements"}
+            </h2>
             <Link to="/events/browse">
               <Button variant="outline">Voir tout</Button>
             </Link>
@@ -140,10 +206,19 @@ const ClientHome = () => {
                         <Calendar className="h-12 w-12 text-primary-foreground opacity-50" />
                       </div>
                     )}
-                    <div className="p-4 space-y-2">
+                     <div className="p-4 space-y-2">
                       <h3 className="font-bold text-lg line-clamp-1">{event.title}</h3>
                       {event.subtitle && (
                         <p className="text-sm text-muted-foreground line-clamp-1">{event.subtitle}</p>
+                      )}
+                      {event.music_genres && event.music_genres.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {event.music_genres.slice(0, 2).map((genre) => (
+                            <span key={genre} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
                       )}
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
