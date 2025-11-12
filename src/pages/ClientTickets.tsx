@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ticket, Calendar, MapPin } from "lucide-react";
+import { Ticket, Calendar, MapPin, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface TicketWithEvent {
   id: string;
@@ -21,6 +21,7 @@ interface TicketWithEvent {
 }
 
 const ClientTickets = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [tickets, setTickets] = useState<TicketWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,14 @@ const ClientTickets = () => {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="container mx-auto max-w-4xl space-y-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold">Mes billets</h1>
           <Link to="/events/browse">
