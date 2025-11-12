@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Search } from "lucide-react";
+import { Calendar, MapPin, Search, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Event {
   id: string;
@@ -18,6 +18,7 @@ interface Event {
 }
 
 const EventsBrowse = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +51,14 @@ const EventsBrowse = () => {
     <div className="min-h-screen p-4 md:p-8">
       <div className="container mx-auto max-w-7xl space-y-8">
         <div className="space-y-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
           <h1 className="text-4xl font-bold">Découvrir les événements</h1>
           <div className="flex gap-4">
             <div className="relative flex-1 max-w-md">
