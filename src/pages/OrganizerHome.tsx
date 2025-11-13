@@ -199,15 +199,7 @@ const OrganizerHome = () => {
 
         <Card className="p-8">
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Mes événements</h2>
-              <Link to="/orga/events/create">
-                <Button variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Créer un événement
-                </Button>
-              </Link>
-            </div>
+            <h2 className="text-2xl font-bold">Mes événements</h2>
             
             {loading ? (
               <div className="space-y-4">
