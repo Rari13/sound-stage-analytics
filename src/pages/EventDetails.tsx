@@ -88,7 +88,7 @@ const EventDetails = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="relative h-96 overflow-hidden">
+      <div className="relative h-64 md:h-96 overflow-hidden">
         {event.banner_url ? (
           <img 
             src={event.banner_url} 
@@ -103,17 +103,17 @@ const EventDetails = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="container mx-auto max-w-4xl px-4 -mt-32 relative z-10">
+      <div className="container mx-auto max-w-4xl px-3 md:px-4 -mt-20 md:-mt-32 relative z-10">
         <Button 
           variant="ghost" 
-          className="mb-6 bg-background/80 backdrop-blur-sm"
+          className="mb-4 md:mb-6 bg-background/80 backdrop-blur-sm"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
 
-        <Card className="p-8 space-y-6">
+        <Card className="p-4 md:p-8 space-y-4 md:space-y-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">

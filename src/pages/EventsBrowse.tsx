@@ -87,18 +87,18 @@ const EventsBrowse = () => {
   const hasActiveFilters = selectedGenre !== "all" || sortBy !== "date" || searchTerm;
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-8">
-        <div className="space-y-4">
+    <div className="min-h-screen p-3 md:p-8">
+      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
+        <div className="space-y-3 md:space-y-4">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
-            className="mb-4"
+            className="mb-2 md:mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
-          <h1 className="text-4xl font-bold">Découvrir les événements</h1>
+          <h1 className="text-2xl md:text-4xl font-bold">Découvrir les événements</h1>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

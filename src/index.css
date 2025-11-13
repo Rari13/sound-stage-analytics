@@ -74,14 +74,24 @@ All colors MUST be HSL.
   }
 
   h1 {
-    @apply text-4xl md:text-5xl lg:text-6xl;
+    @apply text-3xl md:text-5xl lg:text-6xl;
   }
 
   h2 {
-    @apply text-3xl md:text-4xl lg:text-5xl;
+    @apply text-2xl md:text-4xl lg:text-5xl;
   }
 
   h3 {
-    @apply text-2xl md:text-3xl;
+    @apply text-xl md:text-2xl lg:text-3xl;
+  }
+
+  /* Mobile optimizations */
+  input, textarea, select, button {
+    @apply text-base; /* Minimum 16px to prevent zoom on iOS */
+  }
+
+  /* Better tap targets on mobile */
+  button, a {
+    @apply min-h-[44px];
   }
 }

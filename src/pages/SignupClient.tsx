@@ -83,22 +83,22 @@ const SignupClient = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-12">
-      <Card className="w-full max-w-lg p-8 space-y-6 shadow-strong">
+    <div className="min-h-screen flex items-center justify-center p-4 py-8 md:py-12">
+      <Card className="w-full max-w-lg p-4 md:p-8 space-y-4 md:space-y-6 shadow-strong">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Users className="h-8 w-8 text-primary-foreground" />
+            <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
+              <Users className="h-7 w-7 md:h-8 md:w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold">Inscription Client</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Inscription Client</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Créez votre compte pour découvrir des événements
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">Prénom</Label>
               <Input

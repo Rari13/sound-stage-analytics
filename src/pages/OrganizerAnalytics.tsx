@@ -157,13 +157,13 @@ const OrganizerAnalytics = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-8">
+    <div className="min-h-screen p-3 md:p-8">
+      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
         {/* Header with subscription status */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Analytiques & IA</h1>
-            <p className="text-muted-foreground">Insights avancés pour vos événements</p>
+            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Analytiques & IA</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Insights avancés pour vos événements</p>
           </div>
           <div className="flex items-center gap-3">
             {isPremium ? (

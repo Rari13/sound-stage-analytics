@@ -52,8 +52,8 @@ const ClientTickets = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-4xl space-y-8">
+    <div className="min-h-screen p-3 md:p-8">
+      <div className="container mx-auto max-w-4xl space-y-6 md:space-y-8">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -62,10 +62,10 @@ const ClientTickets = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
         </Button>
-        <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold">Mes billets</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
+          <h1 className="text-2xl md:text-4xl font-bold">Mes billets</h1>
           <Link to="/events/browse">
-            <Button>Découvrir des événements</Button>
+            <Button className="w-full md:w-auto">Découvrir des événements</Button>
           </Link>
         </div>
 

@@ -218,8 +218,8 @@ const EventCreate = () => {
           </Button>
         </div>
 
-        <Card className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <Card className="p-4 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
             <div className="space-y-2">
               <Label>Bannière de l'événement</Label>
               {organizerId && (

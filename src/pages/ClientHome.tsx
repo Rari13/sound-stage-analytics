@@ -171,18 +171,18 @@ const ClientHome = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-8">
-        <div className="flex justify-between items-center">
+    <div className="min-h-screen p-3 md:p-8">
+      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Découvrir</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Découvrir</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
               {userPreferences?.city 
                 ? `Les meilleurs événements à ${userPreferences.city}` 
                 : "Les meilleurs événements près de chez vous"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 self-end md:self-auto">
             <Link to="/client/profile">
               <Button variant="outline" size="icon">
                 <Settings className="h-5 w-5" />
@@ -194,9 +194,9 @@ const ClientHome = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid gap-4 md:grid-cols-3 md:gap-6">
           <Link to="/client/tickets">
-            <Card className="p-6 space-y-2 hover:shadow-glow transition-base cursor-pointer">
+            <Card className="p-4 md:p-6 space-y-2 hover:shadow-glow transition-base cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center">
                   <Ticket className="h-6 w-6 text-primary-foreground" />

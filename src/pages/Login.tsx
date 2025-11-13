@@ -81,15 +81,15 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 shadow-strong">
+      <Card className="w-full max-w-md p-4 md:p-8 space-y-4 md:space-y-6 shadow-strong">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-hero flex items-center justify-center shadow-glow">
-              <Music className="h-8 w-8 text-primary-foreground" />
+            <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-gradient-hero flex items-center justify-center shadow-glow">
+              <Music className="h-7 w-7 md:h-8 md:w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold">Connexion</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Connexion</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Accédez à votre compte Sound
           </p>
         </div>

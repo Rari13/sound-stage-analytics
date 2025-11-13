@@ -130,14 +130,14 @@ const OrganizerHome = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="min-h-screen p-3 md:p-8">
+      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Tableau de bord</h1>
-            <p className="text-muted-foreground">Gérez vos événements</p>
+            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tableau de bord</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Gérez vos événements</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto">
             <Link to="/orga/analytics">
               <Button variant="outline" size="lg">
                 <BarChart3 className="mr-2 h-5 w-5" />
