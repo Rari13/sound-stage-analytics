@@ -138,6 +138,12 @@ const OrganizerHome = () => {
             <p className="text-muted-foreground">Gérez vos événements</p>
           </div>
           <div className="flex gap-3">
+            <Link to="/orga/analytics">
+              <Button variant="outline" size="lg">
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Analytiques
+              </Button>
+            </Link>
             <Link to="/orga/scan">
               <Button variant="outline" size="lg">
                 <Scan className="mr-2 h-5 w-5" />

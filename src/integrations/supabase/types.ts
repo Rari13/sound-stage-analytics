@@ -19,11 +19,16 @@ export type Database = {
           age_group: string | null
           art_movements: string[] | null
           artists: string[] | null
+          city: string | null
           created_at: string | null
           gender: string | null
           last_survey_at: string | null
+          latitude: number | null
+          longitude: number | null
+          max_distance_km: number | null
           nationality: string | null
           onboarding_completed_at: string | null
+          preferred_genres: string[] | null
           region: string | null
           updated_at: string | null
           user_id: string
@@ -32,11 +37,16 @@ export type Database = {
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null
+          city?: string | null
           created_at?: string | null
           gender?: string | null
           last_survey_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          max_distance_km?: number | null
           nationality?: string | null
           onboarding_completed_at?: string | null
+          preferred_genres?: string[] | null
           region?: string | null
           updated_at?: string | null
           user_id: string
@@ -45,11 +55,16 @@ export type Database = {
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null
+          city?: string | null
           created_at?: string | null
           gender?: string | null
           last_survey_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          max_distance_km?: number | null
           nationality?: string | null
           onboarding_completed_at?: string | null
+          preferred_genres?: string[] | null
           region?: string | null
           updated_at?: string | null
           user_id?: string
@@ -70,9 +85,12 @@ export type Database = {
           event_type: string | null
           id: string
           is_searchable: boolean | null
+          latitude: number | null
+          longitude: number | null
           music_genres: string[] | null
           organizer_id: string
           postal_code: string | null
+          published_at: string | null
           short_description: string | null
           slug: string
           starts_at: string
@@ -96,9 +114,12 @@ export type Database = {
           event_type?: string | null
           id?: string
           is_searchable?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           music_genres?: string[] | null
           organizer_id: string
           postal_code?: string | null
+          published_at?: string | null
           short_description?: string | null
           slug: string
           starts_at: string
@@ -122,9 +143,12 @@ export type Database = {
           event_type?: string | null
           id?: string
           is_searchable?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           music_genres?: string[] | null
           organizer_id?: string
           postal_code?: string | null
+          published_at?: string | null
           short_description?: string | null
           slug?: string
           starts_at?: string
@@ -227,6 +251,53 @@ export type Database = {
           },
           {
             foreignKeyName: "orders_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizer_subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          monthly_price_cents: number
+          organizer_id: string
+          plan_type: string
+          started_at: string
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          monthly_price_cents?: number
+          organizer_id: string
+          plan_type: string
+          started_at?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          monthly_price_cents?: number
+          organizer_id?: string
+          plan_type?: string
+          started_at?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_subscriptions_organizer_id_fkey"
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizers"
@@ -579,6 +650,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       generate_event_slug: {
         Args: { event_id: string; event_title: string }
         Returns: string

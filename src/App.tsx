@@ -17,6 +17,7 @@ import OrganizerScan from "./pages/OrganizerScan";
 import EventCreate from "./pages/EventCreate";
 import EventEdit from "./pages/EventEdit";
 import EventDetails from "./pages/EventDetails";
+import OrganizerAnalytics from "./pages/OrganizerAnalytics";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -94,6 +95,14 @@ const App = () => (
         } 
       />
       <Route path="/events/:slug" element={<EventDetails />} />
+      <Route 
+        path="/orga/analytics" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerAnalytics />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </TooltipProvider>
