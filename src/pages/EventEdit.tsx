@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, MapPin, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ const EventEdit = () => {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [geolocating, setGeolocating] = useState(false);
   const [organizerId, setOrganizerId] = useState<string>("");
   
   const [formData, setFormData] = useState({
@@ -36,9 +37,12 @@ const EventEdit = () => {
     description: "",
     venue: "",
     city: "",
+    address_line1: "",
     starts_at: "",
     ends_at: "",
     banner_url: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
@@ -92,9 +96,12 @@ const EventEdit = () => {
         description: eventData.description || "",
         venue: eventData.venue || "",
         city: eventData.city || "",
+        address_line1: eventData.address_line1 || "",
         starts_at: eventData.starts_at ? new Date(eventData.starts_at).toISOString().slice(0, 16) : "",
         ends_at: eventData.ends_at ? new Date(eventData.ends_at).toISOString().slice(0, 16) : "",
         banner_url: eventData.banner_url || "",
+        latitude: (eventData as any).latitude || null,
+        longitude: (eventData as any).longitude || null,
       });
 
       // Get price tiers
@@ -121,6 +128,55 @@ const EventEdit = () => {
     fetchEventData();
   }, [user, eventId, navigate, toast]);
 
+  const handleGeolocateAddress = async () => {
+    if (!formData.address_line1 || !formData.city) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez renseigner l'adresse et la ville",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeolocating(true);
+
+    try {
+      const query = `${formData.address_line1}, ${formData.city}, France`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=fr`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const location = data[0];
+        setFormData({
+          ...formData,
+          latitude: parseFloat(location.lat),
+          longitude: parseFloat(location.lon),
+        });
+
+        toast({
+          title: "Localisation trouvée",
+          description: `Coordonnées: ${location.display_name}`,
+        });
+      } else {
+        toast({
+          title: "Localisation introuvable",
+          description: "Vérifiez l'adresse saisie",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de géolocaliser l'adresse",
+        variant: "destructive",
+      });
+    }
+
+    setGeolocating(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventId) return;
@@ -136,10 +192,13 @@ const EventEdit = () => {
         description: formData.description,
         venue: formData.venue,
         city: formData.city,
+        address_line1: formData.address_line1,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
         starts_at: new Date(formData.starts_at).toISOString(),
         ends_at: new Date(formData.ends_at).toISOString(),
         banner_url: formData.banner_url,
-      })
+      } as any)
       .eq('id', eventId);
 
     if (eventError) {
@@ -278,6 +337,37 @@ const EventEdit = () => {
                   required
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse complète *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="address"
+                  value={formData.address_line1}
+                  onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                  required
+                  placeholder="64 Rue Jeanne d'Arc"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGeolocateAddress}
+                  disabled={geolocating || !formData.address_line1 || !formData.city}
+                >
+                  {geolocating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MapPin className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {formData.latitude && formData.longitude
+                  ? `✓ Position enregistrée (${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)})`
+                  : "Cliquez sur l'icône pour géolocaliser l'adresse"}
+              </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">

@@ -10,7 +10,7 @@ import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BannerUpload } from "@/components/BannerUpload";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, MapPin, Loader2 } from "lucide-react";
 
 interface PriceTier {
   name: string;
@@ -26,6 +26,7 @@ const EventCreate = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [geolocating, setGeolocating] = useState(false);
   const [organizerId, setOrganizerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -33,9 +34,12 @@ const EventCreate = () => {
     description: "",
     venue: "",
     city: "",
+    address_line1: "",
     starts_at: "",
     ends_at: "",
     banner_url: null as string | null,
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
     {
@@ -59,6 +63,55 @@ const EventCreate = () => {
     };
     fetchOrganizer();
   }, [user]);
+
+  const handleGeolocateAddress = async () => {
+    if (!formData.address_line1 || !formData.city) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez renseigner l'adresse et la ville",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeolocating(true);
+
+    try {
+      const query = `${formData.address_line1}, ${formData.city}, France`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=fr`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const location = data[0];
+        setFormData({
+          ...formData,
+          latitude: parseFloat(location.lat),
+          longitude: parseFloat(location.lon),
+        });
+
+        toast({
+          title: "Localisation trouvée",
+          description: `Coordonnées: ${location.display_name}`,
+        });
+      } else {
+        toast({
+          title: "Localisation introuvable",
+          description: "Vérifiez l'adresse saisie",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de géolocaliser l'adresse",
+        variant: "destructive",
+      });
+    }
+
+    setGeolocating(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,12 +155,15 @@ const EventCreate = () => {
         description: formData.description,
         venue: formData.venue,
         city: formData.city,
+        address_line1: formData.address_line1,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
         starts_at: formData.starts_at,
         ends_at: formData.ends_at || new Date(new Date(formData.starts_at).getTime() + 6 * 60 * 60 * 1000).toISOString(),
         slug: baseSlug + '-' + Date.now(),
         status: 'draft',
         banner_url: formData.banner_url,
-      })
+      } as any)
       .select()
       .single();
 
@@ -229,6 +285,37 @@ const EventCreate = () => {
                   placeholder="Paris"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse complète *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="address"
+                  value={formData.address_line1}
+                  onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                  required
+                  placeholder="64 Rue Jeanne d'Arc"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGeolocateAddress}
+                  disabled={geolocating || !formData.address_line1 || !formData.city}
+                >
+                  {geolocating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MapPin className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {formData.latitude && formData.longitude
+                  ? `✓ Position enregistrée (${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)})`
+                  : "Cliquez sur l'icône pour géolocaliser l'adresse"}
+              </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">

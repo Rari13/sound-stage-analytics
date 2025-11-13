@@ -34,6 +34,7 @@ const ClientHome = () => {
     preferred_genres: string[] | null;
     latitude?: number | null;
     longitude?: number | null;
+    max_distance_km?: number | null;
   } | null>(null);
 
   useEffect(() => {
@@ -63,11 +64,11 @@ const ClientHome = () => {
   const fetchUserPreferences = async () => {
     const { data } = await supabase
       .from('client_profiles')
-      .select('city, preferred_genres, latitude, longitude')
+      .select('city, preferred_genres, latitude, longitude, max_distance_km')
       .eq('user_id', user?.id)
       .maybeSingle();
 
-    setUserPreferences(data as any || { city: null, preferred_genres: null, latitude: null, longitude: null });
+    setUserPreferences(data as any || { city: null, preferred_genres: null, latitude: null, longitude: null, max_distance_km: null });
   };
 
   const fetchEvents = async () => {
@@ -111,6 +112,22 @@ const ClientHome = () => {
 
     if (data) {
       let processedEvents = [...(data as any[])];
+
+      // Filter by max distance if user has location and max_distance configured
+      if (userPreferences?.latitude && userPreferences?.longitude && userPreferences?.max_distance_km) {
+        processedEvents = processedEvents.filter((event: any) => {
+          // Keep events without coordinates (they'll be at the end anyway)
+          if (!event.latitude || !event.longitude) return true;
+          
+          const distance = calculateDistance(
+            userPreferences.latitude!,
+            userPreferences.longitude!,
+            event.latitude,
+            event.longitude
+          );
+          return distance <= userPreferences.max_distance_km!;
+        });
+      }
 
       // Sort by proximity if user has location
       if (userPreferences?.latitude && userPreferences?.longitude) {
