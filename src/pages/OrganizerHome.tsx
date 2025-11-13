@@ -224,71 +224,75 @@ const OrganizerHome = () => {
                 ))}
               </div>
             ) : events.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {events.map((event) => (
-                  <Card key={event.id} className="p-4 hover:shadow-glow transition-base">
-                    <div className="flex gap-4">
-                      {event.banner_url ? (
-                        <img 
-                          src={event.banner_url} 
-                          alt={event.title}
-                          className="w-32 h-20 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-32 h-20 bg-gradient-primary rounded flex items-center justify-center">
-                          <Calendar className="h-8 w-8 text-primary-foreground opacity-50" />
-                        </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-lg">{event.title}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              {format(new Date(event.starts_at), "d MMMM yyyy • HH:mm", { locale: fr })}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4" />
-                              {event.venue}, {event.city}
-                            </div>
+                  <Card key={event.id} className="p-3 hover:shadow-glow transition-base">
+                    <div className="space-y-3">
+                      {/* Image et titre */}
+                      <div className="flex gap-3">
+                        {event.banner_url ? (
+                          <img 
+                            src={event.banner_url} 
+                            alt={event.title}
+                            className="w-20 h-20 object-cover rounded flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-gradient-primary rounded flex items-center justify-center flex-shrink-0">
+                            <Calendar className="h-6 w-6 text-primary-foreground opacity-50" />
                           </div>
-                          
-                          <div className="flex items-center gap-6">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">{event.revenue?.toFixed(0) || 0} €</p>
-                              <p className="text-xs text-muted-foreground">Revenus</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">{event.tickets_sold || 0}</p>
-                              <p className="text-xs text-muted-foreground">Billets vendus</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {getStatusBadge(event.status)}
-                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3 className="font-bold text-base leading-tight">{event.title}</h3>
+                            {getStatusBadge(event.status)}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{format(new Date(event.starts_at), "d MMM yyyy • HH:mm", { locale: fr })}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{event.venue}, {event.city}</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Link to={`/events/${event.slug}`}>
-                            <Button variant="outline" size="sm">Voir</Button>
-                          </Link>
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-muted/30 rounded-lg p-2 text-center">
+                          <p className="text-lg font-bold">{event.revenue?.toFixed(0) || 0} €</p>
+                          <p className="text-xs text-muted-foreground">Revenus</p>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-2 text-center">
+                          <p className="text-lg font-bold">{event.tickets_sold || 0}</p>
+                          <p className="text-xs text-muted-foreground">Billets vendus</p>
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Link to={`/events/${event.slug}`} className="flex-1">
+                          <Button variant="outline" size="sm" className="w-full">Voir</Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEdit(event.id)}
+                          className="flex-1"
+                        >
+                          Éditer
+                        </Button>
+                        {event.status === 'draft' && (
                           <Button 
-                            variant="outline" 
+                            variant="default" 
                             size="sm"
-                            onClick={() => handleEdit(event.id)}
+                            onClick={() => handlePublish(event.id)}
+                            disabled={publishing === event.id}
+                            className="flex-1"
                           >
-                            Éditer
+                            {publishing === event.id ? "..." : "Publier"}
                           </Button>
-                          {event.status === 'draft' && (
-                            <Button 
-                              variant="default" 
-                              size="sm"
-                              onClick={() => handlePublish(event.id)}
-                              disabled={publishing === event.id}
-                            >
-                              {publishing === event.id ? "Publication..." : "Publier"}
-                            </Button>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </Card>
