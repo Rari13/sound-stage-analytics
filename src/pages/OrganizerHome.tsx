@@ -23,13 +23,21 @@ interface Event {
   revenue?: number;
 }
 
+interface Organizer {
+  id: string;
+  name: string;
+  stripe_account_id: string | null;
+}
+
 const OrganizerHome = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
+  const [organizer, setOrganizer] = useState<Organizer | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState<string | null>(null);
+  const [connectingStripe, setConnectingStripe] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -37,11 +45,13 @@ const OrganizerHome = () => {
       
       const { data: orgData } = await supabase
         .from('organizers')
-        .select('id')
+        .select('id, name, stripe_account_id')
         .eq('owner_user_id', user.id)
         .single();
 
       if (!orgData) return;
+
+      setOrganizer(orgData);
 
       const { data: eventsData } = await supabase
         .from('events')
@@ -115,6 +125,32 @@ const OrganizerHome = () => {
     navigate(`/orga/events/edit/${eventId}`);
   };
 
+  const handleStripeConnect = async () => {
+    if (!organizer) return;
+    
+    setConnectingStripe(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-stripe-connect-account', {
+        body: { organizerId: organizer.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error connecting Stripe:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de configurer les paiements",
+        variant: "destructive",
+      });
+    } finally {
+      setConnectingStripe(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       draft: "secondary",
@@ -138,6 +174,20 @@ const OrganizerHome = () => {
             <p className="text-sm md:text-base text-muted-foreground">Gérez vos événements</p>
           </div>
           <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto">
+            <Button 
+              variant={organizer?.stripe_account_id ? "outline" : "default"} 
+              size="lg"
+              onClick={handleStripeConnect}
+              disabled={connectingStripe}
+            >
+              <DollarSign className="mr-2 h-5 w-5" />
+              {connectingStripe 
+                ? "Connexion..." 
+                : organizer?.stripe_account_id 
+                  ? "Gérer mes paiements" 
+                  : "Configurer mes paiements"
+              }
+            </Button>
             <Link to="/orga/analytics">
               <Button variant="outline" size="lg">
                 <BarChart3 className="mr-2 h-5 w-5" />

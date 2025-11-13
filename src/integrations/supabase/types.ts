@@ -316,9 +316,11 @@ export type Database = {
           instant_payout_enabled: boolean | null
           name: string
           owner_user_id: string
+          payout_mode: string | null
           phone: string | null
           siret: string | null
           slug: string
+          stripe_account_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -331,9 +333,11 @@ export type Database = {
           instant_payout_enabled?: boolean | null
           name: string
           owner_user_id: string
+          payout_mode?: string | null
           phone?: string | null
           siret?: string | null
           slug: string
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -346,9 +350,11 @@ export type Database = {
           instant_payout_enabled?: boolean | null
           name?: string
           owner_user_id?: string
+          payout_mode?: string | null
           phone?: string | null
           siret?: string | null
           slug?: string
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
