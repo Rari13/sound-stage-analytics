@@ -153,7 +153,7 @@ const OrganizerHome = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card className="p-6 space-y-2 hover:shadow-glow transition-base">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center">
@@ -162,18 +162,6 @@ const OrganizerHome = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Événements</p>
                 <p className="text-2xl font-bold">{events.length}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-accent-glow transition-base">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-gradient-accent flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-accent-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Revenus</p>
-                <p className="text-2xl font-bold">0 €</p>
               </div>
             </div>
           </Card>
