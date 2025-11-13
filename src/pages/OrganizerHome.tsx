@@ -19,6 +19,8 @@ interface Event {
   venue: string;
   status: string;
   slug: string;
+  tickets_sold?: number;
+  revenue?: number;
 }
 
 const OrganizerHome = () => {
@@ -41,13 +43,44 @@ const OrganizerHome = () => {
 
       if (!orgData) return;
 
-      const { data } = await supabase
+      const { data: eventsData } = await supabase
         .from('events')
         .select('id, title, banner_url, starts_at, city, venue, status, slug')
         .eq('organizer_id', orgData.id)
         .order('starts_at', { ascending: false });
 
-      if (data) setEvents(data);
+      if (!eventsData) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch tickets and revenue stats for each event
+      const eventsWithStats = await Promise.all(
+        eventsData.map(async (event) => {
+          // Count sold tickets
+          const { count: ticketCount } = await supabase
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', event.id);
+
+          // Calculate revenue from orders
+          const { data: ordersData } = await supabase
+            .from('orders')
+            .select('amount_total_cents')
+            .eq('event_id', event.id)
+            .eq('status', 'completed');
+
+          const revenue = ordersData?.reduce((sum, order) => sum + order.amount_total_cents, 0) || 0;
+
+          return {
+            ...event,
+            tickets_sold: ticketCount || 0,
+            revenue: revenue / 100, // Convert cents to euros
+          };
+        })
+      );
+
+      setEvents(eventsWithStats);
       setLoading(false);
     };
 
@@ -213,8 +246,8 @@ const OrganizerHome = () => {
                         </div>
                       )}
                       <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
                             <h3 className="font-bold text-lg">{event.title}</h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Calendar className="h-4 w-4" />
@@ -225,8 +258,19 @@ const OrganizerHome = () => {
                               {event.venue}, {event.city}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(event.status)}
+                          
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <p className="text-2xl font-bold">{event.revenue?.toFixed(0) || 0} €</p>
+                              <p className="text-xs text-muted-foreground">Revenus</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold">{event.tickets_sold || 0}</p>
+                              <p className="text-xs text-muted-foreground">Billets vendus</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(event.status)}
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
