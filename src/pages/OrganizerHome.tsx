@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, DollarSign, Users, TrendingUp, Plus, BarChart3, Scan, MapPin } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -33,11 +33,25 @@ const OrganizerHome = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [organizer, setOrganizer] = useState<Organizer | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
+
+  // Handle Stripe onboarding completion
+  useEffect(() => {
+    if (searchParams.get('stripe_onboarding') === 'complete') {
+      toast({
+        title: "Configuration Stripe terminée",
+        description: "Vous pouvez maintenant recevoir des paiements !",
+      });
+      // Remove the query parameter
+      searchParams.delete('stripe_onboarding');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     const fetchEvents = async () => {
