@@ -50,8 +50,22 @@ const OrganizerHome = () => {
       // Remove the query parameter
       searchParams.delete('stripe_onboarding');
       setSearchParams(searchParams, { replace: true });
+      
+      // Reload organizer data to get updated stripe_account_id
+      if (user) {
+        supabase
+          .from('organizers')
+          .select('id, name, stripe_account_id')
+          .eq('owner_user_id', user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              setOrganizer(data);
+            }
+          });
+      }
     }
-  }, [searchParams, setSearchParams, toast]);
+  }, [searchParams, setSearchParams, toast, user]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -182,6 +196,49 @@ const OrganizerHome = () => {
   return (
     <div className="min-h-screen p-3 md:p-8">
       <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
+        {/* Stripe Status Banner */}
+        {organizer?.stripe_account_id ? (
+          <Card className="p-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 dark:text-green-100">
+                  Paiements configurés ✓
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Votre compte Stripe est actif. Vous pouvez maintenant vendre des billets et recevoir des paiements.
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                  Configuration des paiements requise
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Configurez Stripe pour commencer à vendre des billets et recevoir des paiements.
+                </p>
+              </div>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={handleStripeConnect}
+                disabled={connectingStripe}
+              >
+                {connectingStripe ? "Connexion..." : "Configurer"}
+              </Button>
+            </div>
+          </Card>
+        )}
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
           <div>
             <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tableau de bord</h1>
