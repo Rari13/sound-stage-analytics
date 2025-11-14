@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 const corsHeaders = {
@@ -13,16 +13,14 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}`, details || "");
 };
 
-const generateTicketHash = (serial: string, eventId: string): string => {
+const generateTicketHash = async (serial: string, eventId: string): Promise<string> => {
   const secret = Deno.env.get("TICKET_SECRET") || "default-secret-change-me";
   const data = `${serial}.${eventId}.${secret}`;
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(data);
-  return crypto.subtle.digest("SHA-256", dataBuffer)
-    .then(hashBuffer => {
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    });
+  const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
 const generateQRCode = async (token: string): Promise<string> => {
