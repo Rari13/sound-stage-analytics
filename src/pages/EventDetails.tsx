@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Clock, ArrowLeft, Users, Euro } from "lucide-react";
+import { Calendar, MapPin, Clock, ArrowLeft, Users, Euro, Minus, Plus, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface Event {
   id: string;
@@ -35,6 +36,8 @@ const EventDetails = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -85,6 +88,51 @@ const EventDetails = () => {
       </div>
     );
   }
+
+  const updateQuantity = (tierId: string, delta: number) => {
+    setQuantities(prev => {
+      const current = prev[tierId] || 0;
+      const newQty = Math.max(0, Math.min(10, current + delta)); // Max 10 per tier
+      return { ...prev, [tierId]: newQty };
+    });
+  };
+
+  const totalTickets = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
+  const totalAmount = priceTiers.reduce((sum, tier) => {
+    const qty = quantities[tier.id] || 0;
+    return sum + (tier.price_cents * qty);
+  }, 0);
+
+  const handleCheckout = async () => {
+    if (totalTickets === 0) {
+      toast.error("Veuillez sélectionner au moins un billet");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const items = Object.entries(quantities)
+        .filter(([_, qty]) => qty > 0)
+        .map(([tierId, qty]) => ({ tierId, qty }));
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { eventId: event.id, items },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Erreur lors de la création de la commande");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -158,34 +206,73 @@ const EventDetails = () => {
             </div>
           )}
 
-          {priceTiers.length > 0 && (
+          {priceTiers.length > 0 && event.status === 'published' && (
             <div className="pt-6 border-t">
-              <h2 className="text-2xl font-bold mb-4">Tarifs</h2>
+              <h2 className="text-2xl font-bold mb-4">Billets</h2>
               <div className="grid gap-4">
                 {priceTiers.map((tier) => (
                   <Card key={tier.id} className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="flex-1">
                         <h3 className="font-semibold">{tier.name}</h3>
                         {tier.quota && (
                           <p className="text-sm text-muted-foreground">{tier.quota} places disponibles</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-2xl font-bold">
-                        <Euro className="h-6 w-6" />
-                        {(tier.price_cents / 100).toFixed(2)}
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 text-xl font-bold">
+                          {(tier.price_cents / 100).toFixed(2)} €
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(tier.id, -1)}
+                            disabled={!quantities[tier.id]}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold">
+                            {quantities[tier.id] || 0}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(tier.id, 1)}
+                            disabled={(quantities[tier.id] || 0) >= 10}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card>
                 ))}
               </div>
-            </div>
-          )}
 
-          {event.status === 'published' && (
-            <div className="pt-6 border-t">
-              <Button className="w-full" size="lg">
-                Réserver mes billets
+              {totalTickets > 0 && (
+                <Card className="p-4 mt-4 bg-primary/5">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-semibold">Total ({totalTickets} billet{totalTickets > 1 ? 's' : ''})</span>
+                    <span className="text-2xl font-bold">{(totalAmount / 100).toFixed(2)} €</span>
+                  </div>
+                </Card>
+              )}
+
+              <Button 
+                className="w-full mt-4" 
+                size="lg"
+                onClick={handleCheckout}
+                disabled={totalTickets === 0 || checkoutLoading}
+              >
+                {checkoutLoading ? (
+                  "Chargement..."
+                ) : (
+                  <>
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    Acheter {totalTickets > 0 ? `(${(totalAmount / 100).toFixed(2)} €)` : ''}
+                  </>
+                )}
               </Button>
             </div>
           )}
