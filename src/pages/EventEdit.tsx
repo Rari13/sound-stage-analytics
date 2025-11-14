@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, MapPin, Loader2, Share2, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ const EventEdit = () => {
   const [submitting, setSubmitting] = useState(false);
   const [geolocating, setGeolocating] = useState(false);
   const [organizerId, setOrganizerId] = useState<string>("");
+  const [eventSlug, setEventSlug] = useState<string>("");
   
   const [formData, setFormData] = useState({
     title: "",
@@ -103,6 +104,8 @@ const EventEdit = () => {
         latitude: (eventData as any).latitude || null,
         longitude: (eventData as any).longitude || null,
       });
+
+      setEventSlug(eventData.slug || "");
 
       // Get price tiers
       const { data: tiersData } = await supabase
@@ -264,6 +267,15 @@ const EventEdit = () => {
     setPriceTiers(updated);
   };
 
+  const copyShareableLink = () => {
+    const link = `${window.location.origin}/events/${eventSlug}`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Lien copié",
+      description: "Le lien partageable a été copié dans le presse-papier",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -271,6 +283,8 @@ const EventEdit = () => {
       </div>
     );
   }
+
+  const shareableLink = `${window.location.origin}/events/${eventSlug}`;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -283,6 +297,35 @@ const EventEdit = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
+
+        {eventSlug && (
+          <Card className="p-6 mb-6 bg-primary/5 border-primary/20">
+            <div className="flex items-start gap-4">
+              <Share2 className="h-5 w-5 text-primary mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2">Lien partageable</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Partagez ce lien pour permettre aux utilisateurs de voir et d'acheter des billets sans télécharger l'app
+                </p>
+                <div className="flex gap-2">
+                  <Input 
+                    value={shareableLink} 
+                    readOnly 
+                    className="bg-background"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="icon"
+                    onClick={copyShareableLink}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <Card className="p-8">
           <h1 className="text-3xl font-bold mb-6">Modifier l'événement</h1>

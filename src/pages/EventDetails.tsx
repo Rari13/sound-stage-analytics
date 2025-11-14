@@ -3,8 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Calendar, MapPin, Clock, ArrowLeft, Users, Euro, Minus, Plus, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -33,11 +37,14 @@ interface PriceTier {
 const EventDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [guestEmailDialogOpen, setGuestEmailDialogOpen] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -109,6 +116,21 @@ const EventDetails = () => {
       return;
     }
 
+    // If user is not logged in, ask for email
+    if (!user) {
+      setGuestEmailDialogOpen(true);
+      return;
+    }
+
+    await processCheckout(user.email || null);
+  };
+
+  const processCheckout = async (email: string | null) => {
+    if (!email) {
+      toast.error("Email requis");
+      return;
+    }
+
     setCheckoutLoading(true);
     try {
       const items = Object.entries(quantities)
@@ -116,13 +138,15 @@ const EventDetails = () => {
         .map(([tierId, qty]) => ({ tierId, qty }));
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { eventId: event.id, items },
+        body: { eventId: event.id, items, customerEmail: email },
       });
 
       if (error) throw error;
 
       if (data?.url) {
         window.open(data.url, '_blank');
+        setGuestEmailDialogOpen(false);
+        setGuestEmail("");
       } else {
         throw new Error("No checkout URL returned");
       }
@@ -132,6 +156,14 @@ const EventDetails = () => {
     } finally {
       setCheckoutLoading(false);
     }
+  };
+
+  const handleGuestCheckout = () => {
+    if (!guestEmail || !guestEmail.includes('@')) {
+      toast.error("Veuillez entrer un email valide");
+      return;
+    }
+    processCheckout(guestEmail);
   };
 
   return (
@@ -278,6 +310,47 @@ const EventDetails = () => {
           )}
         </Card>
       </div>
+
+      {/* Guest Email Dialog */}
+      <Dialog open={guestEmailDialogOpen} onOpenChange={setGuestEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finaliser votre commande</DialogTitle>
+            <DialogDescription>
+              Veuillez entrer votre email pour recevoir vos billets
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="guest-email">Email *</Label>
+              <Input
+                id="guest-email"
+                type="email"
+                placeholder="votre@email.com"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGuestCheckout()}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1" 
+                onClick={handleGuestCheckout}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? "Chargement..." : "Continuer"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setGuestEmailDialogOpen(false)}
+                disabled={checkoutLoading}
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
