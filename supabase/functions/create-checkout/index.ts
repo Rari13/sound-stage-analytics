@@ -153,8 +153,8 @@ serve(async (req) => {
       customer_email: customerEmail,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${origin}/order/success?sid={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/event/${event.slug}`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/payment-cancelled`,
       payment_intent_data: {
         on_behalf_of: organizer.stripe_account_id,
         transfer_data: {

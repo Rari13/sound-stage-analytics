@@ -18,6 +18,8 @@ import EventCreate from "./pages/EventCreate";
 import EventEdit from "./pages/EventEdit";
 import EventDetails from "./pages/EventDetails";
 import OrganizerAnalytics from "./pages/OrganizerAnalytics";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -95,7 +97,9 @@ const App = () => (
         } 
       />
       <Route path="/events/:slug" element={<EventDetails />} />
-      <Route 
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+      <Route
         path="/orga/analytics" 
         element={
           <ProtectedRoute requireRole="organizer">
