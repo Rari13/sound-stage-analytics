@@ -137,14 +137,24 @@ const EventDetails = () => {
         .filter(([_, qty]) => qty > 0)
         .map(([tierId, qty]) => ({ tierId, qty }));
 
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      // Check if this is a free reservation
+      const isFree = totalAmount === 0;
+      const functionName = isFree ? "create-free-reservation" : "create-checkout";
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { eventId: event.id, items, customerEmail: email },
       });
 
       if (error) throw error;
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        if (isFree) {
+          // For free reservations, redirect directly (no payment needed)
+          navigate(data.url.replace(window.location.origin, ''));
+        } else {
+          // For paid tickets, open Stripe in new tab
+          window.open(data.url, '_blank');
+        }
         setGuestEmailDialogOpen(false);
         setGuestEmail("");
       } else {

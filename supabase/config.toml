@@ -12,5 +12,8 @@ verify_jwt = true
 [functions.create-checkout]
 verify_jwt = false
 
+[functions.create-free-reservation]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
