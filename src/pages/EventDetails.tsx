@@ -312,7 +312,7 @@ const EventDetails = () => {
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
-                    Acheter {totalTickets > 0 ? `(${(totalAmount / 100).toFixed(2)} €)` : ''}
+                    {totalAmount === 0 ? 'Réserver gratuitement' : `Acheter (${(totalAmount / 100).toFixed(2)} €)`}
                   </>
                 )}
               </Button>
@@ -325,9 +325,9 @@ const EventDetails = () => {
       <Dialog open={guestEmailDialogOpen} onOpenChange={setGuestEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Finaliser votre commande</DialogTitle>
+            <DialogTitle>{totalAmount === 0 ? 'Finaliser votre réservation' : 'Finaliser votre commande'}</DialogTitle>
             <DialogDescription>
-              Veuillez entrer votre email pour recevoir vos billets
+              Veuillez entrer votre email pour recevoir vos billets{totalAmount === 0 ? ' avec le code QR' : ''}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
