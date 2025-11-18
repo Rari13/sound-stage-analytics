@@ -116,8 +116,8 @@ const EventDetails = () => {
       return;
     }
 
-    // If user is not logged in and event is not free, ask for email
-    if (!user && totalAmount > 0) {
+    // If user is not logged in, ask for email
+    if (!user) {
       setGuestEmailDialogOpen(true);
       return;
     }
@@ -137,24 +137,16 @@ const EventDetails = () => {
         .filter(([_, qty]) => qty > 0)
         .map(([tierId, qty]) => ({ tierId, qty }));
 
-      // Check if this is a free reservation
-      const isFree = totalAmount === 0;
-      const functionName = isFree ? "create-free-reservation" : "create-checkout";
-
-      const { data, error } = await supabase.functions.invoke(functionName, {
+      // Always use Stripe Checkout for uniform experience
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { eventId: event.id, items, customerEmail: email },
       });
 
       if (error) throw error;
 
       if (data?.url) {
-        if (isFree) {
-          // For free reservations, redirect directly (no payment needed)
-          navigate(data.url.replace(window.location.origin, ''));
-        } else {
-          // For paid tickets, open Stripe in new tab
-          window.open(data.url, '_blank');
-        }
+        // Open Stripe Checkout in new tab
+        window.open(data.url, '_blank');
         setGuestEmailDialogOpen(false);
         setGuestEmail("");
       } else {
@@ -312,7 +304,7 @@ const EventDetails = () => {
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
-                    {totalAmount === 0 ? 'Réserver gratuitement' : `Acheter (${(totalAmount / 100).toFixed(2)} €)`}
+                    {totalAmount === 0 ? 'Réserver' : 'Acheter'} ({(totalAmount / 100).toFixed(2)} €)
                   </>
                 )}
               </Button>
@@ -325,9 +317,9 @@ const EventDetails = () => {
       <Dialog open={guestEmailDialogOpen} onOpenChange={setGuestEmailDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{totalAmount === 0 ? 'Finaliser votre réservation' : 'Finaliser votre commande'}</DialogTitle>
+            <DialogTitle>Finaliser votre commande</DialogTitle>
             <DialogDescription>
-              Veuillez entrer votre email pour recevoir vos billets{totalAmount === 0 ? ' avec le code QR' : ''}
+              Veuillez entrer votre email pour continuer vers le paiement
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
