@@ -32,6 +32,9 @@ interface PriceTier {
   name: string;
   price_cents: number;
   quota: number | null;
+  hidden: boolean | null;
+  starts_at: string | null;
+  ends_at: string | null;
 }
 
 const EventDetails = () => {
@@ -63,10 +66,13 @@ const EventDetails = () => {
 
       setEvent(eventData);
 
+      // Récupère tous les tarifs visibles dès la publication de l'événement
+      // Les dates starts_at/ends_at ne limitent pas l'affichage - les billets sont disponibles immédiatement
       const { data: tiersData } = await supabase
         .from('price_tiers')
-        .select('id, name, price_cents, quota')
+        .select('id, name, price_cents, quota, hidden, starts_at, ends_at')
         .eq('event_id', eventData.id)
+        .or('hidden.is.null,hidden.eq.false')
         .order('price_cents');
 
       if (tiersData) {
