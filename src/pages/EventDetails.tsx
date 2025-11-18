@@ -248,7 +248,7 @@ const EventDetails = () => {
             </div>
           )}
 
-          {priceTiers.length > 0 && event.status === 'published' && (
+          {priceTiers.length > 0 && (
             <div className="pt-6 border-t">
               <h2 className="text-2xl font-bold mb-4">Billets</h2>
               <div className="grid gap-4">
