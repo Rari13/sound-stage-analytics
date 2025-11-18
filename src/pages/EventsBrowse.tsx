@@ -25,6 +25,7 @@ interface Event {
   city: string;
   venue: string;
   starts_at: string;
+  slug: string;
   cover_image: any;
   music_genres: string[] | null;
 }
@@ -45,7 +46,7 @@ const EventsBrowse = () => {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, title, subtitle, city, venue, starts_at, cover_image, music_genres')
+      .select('id, title, subtitle, city, venue, starts_at, slug, cover_image, music_genres')
       .eq('status', 'published')
       .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
@@ -189,7 +190,7 @@ const EventsBrowse = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
-              <Link key={event.id} to={`/event/${event.id}`}>
+              <Link key={event.id} to={`/events/${event.slug}`}>
                 <Card className="overflow-hidden hover:shadow-glow transition-all cursor-pointer">
                   {event.cover_image?.url && (
                     <div className="h-48 bg-muted overflow-hidden">

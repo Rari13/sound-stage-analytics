@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ticket, Calendar, MapPin, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Ticket, Calendar, MapPin, ArrowLeft, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import QRCode from "qrcode";
 
 interface TicketWithEvent {
   id: string;
@@ -25,6 +27,8 @@ const ClientTickets = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<TicketWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithEvent | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   useEffect(() => {
     if (user) {
@@ -49,6 +53,31 @@ const ClientTickets = () => {
       setTickets(data as any);
     }
     setLoading(false);
+  };
+
+  const handleShowQR = async (ticket: TicketWithEvent) => {
+    setSelectedTicket(ticket);
+    try {
+      const qrUrl = await QRCode.toDataURL(ticket.qr_token, {
+        errorCorrectionLevel: 'H',
+        width: 400,
+        margin: 2,
+      });
+      setQrDataUrl(qrUrl);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    }
+  };
+
+  const downloadQRCode = () => {
+    if (!qrDataUrl || !selectedTicket) return;
+    
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `ticket-${selectedTicket.qr_token}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -121,10 +150,15 @@ const ClientTickets = () => {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleShowQR(ticket)}
+                      disabled={ticket.status !== 'valid'}
+                    >
                       Afficher le QR Code
                     </Button>
-                    <Link to={`/event/${ticket.event.id}`}>
+                    <Link to={`/events/${ticket.event.id}`}>
                       <Button variant="ghost" size="sm" className="w-full">
                         Détails de l'événement
                       </Button>
@@ -135,6 +169,58 @@ const ClientTickets = () => {
             ))}
           </div>
         )}
+
+        {/* QR Code Dialog */}
+        <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Votre billet</DialogTitle>
+            </DialogHeader>
+            {selectedTicket && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="font-bold text-lg mb-2">{selectedTicket.event.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {new Date(selectedTicket.event.starts_at).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+
+                {qrDataUrl && (
+                  <div className="bg-white p-4 rounded-lg flex items-center justify-center">
+                    <img src={qrDataUrl} alt="QR Code" className="w-full max-w-xs" />
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Code du billet</p>
+                  <p className="font-mono font-bold text-sm">{selectedTicket.qr_token}</p>
+                </div>
+
+                <Button 
+                  onClick={downloadQRCode} 
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Télécharger le QR Code
+                </Button>
+
+                <div className="bg-amber-50 dark:bg-amber-950 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-900 dark:text-amber-100">
+                    <strong>Important:</strong> Présentez ce QR code à l'entrée de l'événement.
+                  </p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
