@@ -48,7 +48,8 @@ const PaymentSuccess = () => {
 
   const fetchOrder = async () => {
     try {
-      const { data, error } = await supabase
+      // Try first with stripe_checkout_session_id
+      let { data, error } = await supabase
         .from("orders")
         .select(`
           id,
@@ -62,13 +63,33 @@ const PaymentSuccess = () => {
         .eq("stripe_checkout_session_id", sessionId)
         .single();
 
+      // If not found, try with order id (for free reservations)
+      if (error && error.code === 'PGRST116') {
+        const response = await supabase
+          .from("orders")
+          .select(`
+            id,
+            short_code,
+            amount_total_cents,
+            status,
+            created_at,
+            events(title, venue, city, starts_at, slug, banner_url),
+            tickets(id, qr_token, status)
+          `)
+          .eq("id", sessionId)
+          .single();
+        
+        data = response.data;
+        error = response.error;
+      }
+
       if (error) throw error;
 
       if (data) {
         setOrder(data as any);
-        if (data.status === "completed") {
+        if (data.status === "completed" || data.status === "paid") {
           toast({
-            title: "Paiement confirmé !",
+            title: "Réservation confirmée !",
             description: "Vos billets ont été envoyés par email.",
           });
         }
