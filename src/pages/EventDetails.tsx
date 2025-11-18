@@ -116,13 +116,13 @@ const EventDetails = () => {
       return;
     }
 
-    // If user is not logged in, ask for email
-    if (!user) {
+    // If user is not logged in and event is not free, ask for email
+    if (!user && totalAmount > 0) {
       setGuestEmailDialogOpen(true);
       return;
     }
 
-    await processCheckout(user.email || null);
+    await processCheckout(user?.email || null);
   };
 
   const processCheckout = async (email: string | null) => {

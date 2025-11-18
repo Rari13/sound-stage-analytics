@@ -109,24 +109,50 @@ serve(async (req) => {
 
     logStep("Total quantity calculated", { totalQty });
 
-    // Get or create user in profiles if authenticated
-    if (userId) {
-      const { data: existingProfile } = await supabaseClient
-        .from("profiles")
-        .select("id")
-        .eq("id", userId)
-        .single();
+    // Get or create user
+    if (!userId) {
+      // For guest users, create or get user account
+      const { data: signUpData, error: signUpError } = await supabaseClient.auth.admin.createUser({
+        email: customerEmail,
+        password: crypto.randomUUID(),
+        email_confirm: true,
+        user_metadata: { role: "client" }
+      });
 
-      if (!existingProfile) {
-        await supabaseClient
-          .from("profiles")
-          .insert({ id: userId, role: "client" });
-        logStep("Profile created", { userId });
+      if (signUpError) {
+        // If user already exists, try to find them
+        if (signUpError.message.includes("already") || signUpError.message.includes("existe")) {
+          const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers();
+          if (!listError && users) {
+            const existingUser = users.find(u => u.email === customerEmail);
+            if (existingUser) {
+              userId = existingUser.id;
+              logStep("Existing user found", { userId, email: customerEmail });
+            }
+          }
+        }
+        
+        if (!userId) {
+          throw new Error(`Failed to create/find user: ${signUpError.message}`);
+        }
+      } else if (signUpData.user) {
+        userId = signUpData.user.id;
+        logStep("Guest account created", { userId, email: customerEmail });
       }
-    } else {
-      // For guest users, we need to handle the case where they don't have a user_id
-      // In this case, we'll need to modify our approach since orders table requires user_id
-      throw new Error("Guest checkout not fully implemented for free events. Please sign in.");
+    }
+
+    // Ensure profile exists
+    const { data: existingProfile } = await supabaseClient
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single();
+
+    if (!existingProfile) {
+      await supabaseClient
+        .from("profiles")
+        .insert({ id: userId, role: "client" });
+      logStep("Profile created", { userId });
     }
 
     // Create order
@@ -181,7 +207,24 @@ serve(async (req) => {
 
     // Return success URL
     const origin = req.headers.get("origin") || "http://localhost:8080";
-    const successUrl = `${origin}/payment/success?session_id=${order.id}`;
+    const successUrl = `${origin}/payment-success?session_id=${order.id}`;
+
+    // Send ticket email asynchronously (non-blocking)
+    const emailUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-ticket-email`;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    fetch(emailUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({ orderId: order.id }),
+    }).then(() => {
+      logStep("Ticket email request sent");
+    }).catch((err) => {
+      logStep("Email error (non-blocking)", err);
+    });
 
     return new Response(
       JSON.stringify({ url: successUrl }),
