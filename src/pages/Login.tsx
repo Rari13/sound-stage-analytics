@@ -61,8 +61,7 @@ const Login = () => {
   const handleSignOut = async () => {
     await signOut();
     toast({ title: "Déconnecté", description: "Vous pouvez maintenant vous reconnecter." });
-    // Force reload to clear all auth state
-    setTimeout(() => window.location.reload(), 500);
+    navigate('/login');
   };
 
   const handleGoogleSignIn = async () => {
