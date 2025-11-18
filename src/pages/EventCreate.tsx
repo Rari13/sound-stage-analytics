@@ -199,9 +199,9 @@ const EventCreate = () => {
 
     toast({
       title: "Événement créé",
-      description: "Vous pouvez maintenant le publier et partager le lien",
+      description: "Votre événement a été créé avec succès. Vous pouvez maintenant le modifier via le bouton d'édition.",
     });
-    navigate(`/orga/events/edit/${eventData.id}`);
+    navigate('/orga/home');
     setLoading(false);
   };
 
