@@ -143,20 +143,45 @@ const EventDetails = () => {
         .filter(([_, qty]) => qty > 0)
         .map(([tierId, qty]) => ({ tierId, qty }));
 
-      // Always use Stripe Checkout for uniform experience
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { eventId: event.id, items, customerEmail: email },
+      // Check if all selected tiers are free
+      const isFreeEvent = items.every(item => {
+        const tier = priceTiers.find(t => t.id === item.tierId);
+        return tier && tier.price_cents === 0;
       });
 
-      if (error) throw error;
+      if (isFreeEvent) {
+        // Use free reservation flow for completely free events
+        const { data, error } = await supabase.functions.invoke("create-free-reservation", {
+          body: { eventId: event.id, items, customerEmail: email },
+        });
 
-      if (data?.url) {
-        // Open Stripe Checkout in new tab
-        window.open(data.url, '_blank');
-        setGuestEmailDialogOpen(false);
-        setGuestEmail("");
+        if (error) throw error;
+
+        if (data?.orderId) {
+          setGuestEmailDialogOpen(false);
+          setGuestEmail("");
+          // Redirect to success page with order ID
+          navigate(`/payment-success?session_id=${data.orderId}`);
+          toast.success("Réservation confirmée ! Vérifiez votre email pour vos billets.");
+        } else {
+          throw new Error("No order ID returned");
+        }
       } else {
-        throw new Error("No checkout URL returned");
+        // Use Stripe Checkout for paid events
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: { eventId: event.id, items, customerEmail: email },
+        });
+
+        if (error) throw error;
+
+        if (data?.url) {
+          // Open Stripe Checkout in new tab
+          window.open(data.url, '_blank');
+          setGuestEmailDialogOpen(false);
+          setGuestEmail("");
+        } else {
+          throw new Error("No checkout URL returned");
+        }
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
