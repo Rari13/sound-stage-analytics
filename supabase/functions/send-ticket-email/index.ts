@@ -73,15 +73,22 @@ serve(async (req) => {
 
     // Generate QR codes for each ticket
     const ticketPromises = order.tickets.map(async (ticket: any) => {
-      const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
-        errorCorrectionLevel: 'H',
-        width: 300,
-        margin: 2,
-      });
-      return {
-        id: ticket.id,
-        qrCode: qrDataUrl.split(',')[1], // Get base64 part only
-      };
+      try {
+        const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
+          errorCorrectionLevel: 'H',
+          width: 300,
+          margin: 2,
+          type: 'image/png',
+        });
+        return {
+          id: ticket.id,
+          qrCode: qrDataUrl.split(',')[1], // Get base64 part only
+        };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logStep("QR Code generation error", { ticketId: ticket.id, error: errorMessage });
+        throw new Error(`Failed to generate QR code: ${errorMessage}`);
+      }
     });
 
     const ticketsWithQR = await Promise.all(ticketPromises);
