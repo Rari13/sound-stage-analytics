@@ -227,7 +227,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ url: successUrl }),
+      JSON.stringify({ url: successUrl, orderId: order.id }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
