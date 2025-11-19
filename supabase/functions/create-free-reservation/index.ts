@@ -209,17 +209,9 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:8080";
     const successUrl = `${origin}/payment-success?session_id=${order.id}`;
 
-    // Send ticket email asynchronously (non-blocking)
-    const emailUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-ticket-email`;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
-    fetch(emailUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify({ orderId: order.id }),
+    // Send ticket email asynchronously using Supabase client (non-blocking)
+    supabaseClient.functions.invoke('send-ticket-email', {
+      body: { orderId: order.id }
     }).then(() => {
       logStep("Ticket email request sent");
     }).catch((err) => {
