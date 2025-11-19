@@ -19,9 +19,10 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Use SERVICE_ROLE_KEY to bypass RLS when creating orders
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
     const authHeader = req.headers.get("Authorization");
@@ -171,28 +172,52 @@ serve(async (req) => {
 
     logStep("Stripe session created", { sessionId: session.id });
 
+    // Get or create user for guest checkouts
+    let finalUserId = userId;
+    if (!userId) {
+      // Create a guest user account
+      const { data: guestUser, error: guestError } = await supabaseClient.auth.admin.createUser({
+        email: customerEmail,
+        password: crypto.randomUUID(),
+        email_confirm: true,
+        user_metadata: { role: "client" }
+      });
+      
+      if (guestError) {
+        logStep("Error creating guest user", guestError);
+        throw new Error("Could not create user account");
+      }
+      
+      finalUserId = guestUser.user.id;
+      logStep("Guest user created", { userId: finalUserId });
+    }
+
+    // Generate short code for order
+    const shortCode = await supabaseClient.rpc('generate_short_code').then(r => r.data || 'XXXXXXXX');
+
     // Create order record (pending)
     const { data: order, error: orderError } = await supabaseClient
       .from("orders")
       .insert({
         event_id: eventId,
         organizer_id: organizer.id,
-        user_id: userId || null,
+        user_id: finalUserId,
         stripe_checkout_session_id: session.id,
         status: "pending",
         amount_total_cents: subtotalCents,
         application_fee_cents: applicationFeeAmount,
-        currency: "E",
+        currency: "EUR",
+        short_code: shortCode,
       })
       .select()
       .single();
 
     if (orderError) {
       logStep("Error creating order", orderError);
-      // Continue anyway - webhook will handle it
-    } else {
-      logStep("Order created", { orderId: order.id });
+      throw new Error(`Failed to create order: ${orderError.message}`);
     }
+    
+    logStep("Order created", { orderId: order.id, shortCode });
 
     return new Response(
       JSON.stringify({ url: session.url }),
