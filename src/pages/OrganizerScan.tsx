@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { QRScanner } from "@/components/QRScanner";
 
 const OrganizerScan = () => {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ const OrganizerScan = () => {
   const [scanResult, setScanResult] = useState<any>(null);
   const [organizerId, setOrganizerId] = useState<string>("");
   const [scannedCount, setScannedCount] = useState(0);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -52,13 +54,16 @@ const OrganizerScan = () => {
 
     setDevices(devicesData || []);
 
-    // Load upcoming events
+    // Load events (today and future)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const { data: eventsData } = await supabase
       .from('events')
       .select('*')
       .eq('organizer_id', orgData.id)
       .eq('status', 'published')
-      .gte('starts_at', new Date().toISOString())
+      .gte('starts_at', today.toISOString())
       .order('starts_at', { ascending: true });
 
     setEvents(eventsData || []);
@@ -291,21 +296,42 @@ const OrganizerScan = () => {
                 <p className="text-sm">Billets scannés : {scannedCount}</p>
               </div>
 
-              <form onSubmit={handleManualScan} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Code QR du billet</Label>
-                  <Input
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="Saisir le code ou scanner"
-                    className="h-14 text-lg"
-                    autoFocus
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg" disabled={loading || !manualCode.trim()}>
-                  {loading ? "Validation..." : "Valider le billet"}
-                </Button>
-              </form>
+              {!showScanner ? (
+                <>
+                  <Button
+                    onClick={() => setShowScanner(true)}
+                    variant="hero"
+                    size="lg"
+                    className="w-full mb-4"
+                  >
+                    <Camera className="h-5 w-5 mr-2" />
+                    Scanner avec la caméra
+                  </Button>
+
+                  <form onSubmit={handleManualScan} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Ou saisir manuellement</Label>
+                      <Input
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value)}
+                        placeholder="Code QR du billet"
+                        className="h-14 text-lg"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg" disabled={loading || !manualCode.trim()}>
+                      {loading ? "Validation..." : "Valider"}
+                    </Button>
+                  </form>
+                </>
+              ) : (
+                <QRScanner
+                  onScanSuccess={(code) => {
+                    setShowScanner(false);
+                    validateTicket(code);
+                  }}
+                  onClose={() => setShowScanner(false)}
+                />
+              )}
 
               {scanResult && (
                 <Card className={`p-6 ${
