@@ -167,6 +167,13 @@ export type Database = {
             referencedRelation: "organizers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       follows: {
@@ -194,6 +201,13 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
             referencedColumns: ["id"]
           },
         ]
@@ -256,6 +270,13 @@ export type Database = {
             referencedRelation: "organizers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       organizer_subscriptions: {
@@ -301,6 +322,13 @@ export type Database = {
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizer_subscriptions_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
             referencedColumns: ["id"]
           },
         ]
@@ -478,6 +506,13 @@ export type Database = {
             referencedRelation: "organizers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scan_devices_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       scan_logs: {
@@ -574,6 +609,13 @@ export type Database = {
             referencedRelation: "organizers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scan_sessions_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tickets: {
@@ -653,7 +695,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_organizers_view: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          slug: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          slug?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          slug?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_distance: {
