@@ -37,19 +37,34 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
   const handleStartScan = async () => {
     setError(null);
 
+    // Check HTTPS requirement (critical for Safari iOS)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' ||
+                     window.location.hostname === '127.0.0.1';
+    
+    if (!isSecure) {
+      setError("⚠️ Safari nécessite HTTPS. Utilisez le lien publié de votre app.");
+      return;
+    }
+
     try {
       // Initialize scanner
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("qr-reader");
       }
 
-      // Start scanning with back camera (environment)
+      // Start scanning with back camera (environment) - iOS compatible config
       await scannerRef.current.start(
-        { facingMode: "environment" }, // Use back camera
+        { facingMode: "environment" }, // Back camera
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         },
         (decodedText) => {
           // Success callback
@@ -70,13 +85,13 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
       console.error("Camera start error:", err);
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError("❌ Accès caméra refusé. Autorisez l'accès et rechargez la page.");
+        setError("❌ Accès caméra refusé. Dans Safari: Réglages > Safari > Caméra > Autoriser");
       } else if (err.name === 'NotFoundError') {
         setError("❌ Aucune caméra détectée sur cet appareil.");
       } else if (err.name === 'NotReadableError') {
-        setError("❌ Caméra déjà utilisée par une autre app. Fermez les autres apps.");
+        setError("❌ Caméra déjà utilisée. Fermez les autres apps et réessayez.");
       } else {
-        setError(`❌ Erreur: ${err.message || "Impossible d'accéder à la caméra"}`);
+        setError(`❌ Erreur Safari: ${err.message || "Vérifiez que vous êtes en HTTPS"}`);
       }
       
       setIsScanning(false);
@@ -113,17 +128,22 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
             <Camera className="h-5 w-5 mr-2" />
             📸 Ouvrir la caméra
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            💡 Autorisez l'accès à la caméra dans votre navigateur
-          </p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p className="text-center">💡 Sur Safari iOS:</p>
+            <p className="text-center">1. Utilisez le lien HTTPS publié</p>
+            <p className="text-center">2. Autorisez la caméra quand demandé</p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div 
             id="qr-reader" 
             className="w-full rounded-lg overflow-hidden bg-black"
-            style={{ minHeight: "300px" }}
+            style={{ minHeight: "350px" }}
           />
+          <p className="text-sm text-center text-muted-foreground">
+            🎯 Placez le QR code dans le cadre
+          </p>
           <Button onClick={handleStop} variant="outline" className="w-full">
             ⏹️ Arrêter le scan
           </Button>
