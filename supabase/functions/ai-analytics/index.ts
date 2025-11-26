@@ -24,6 +24,46 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Get authenticated user from JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify that the user owns the organizer
+    const { data: organizer, error: orgError } = await supabase
+      .from("organizers")
+      .select("owner_user_id")
+      .eq("id", organizerId)
+      .single();
+
+    if (orgError || !organizer) {
+      return new Response(
+        JSON.stringify({ error: "Organizer not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (organizer.owner_user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - You do not own this organizer" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check subscription status
     const { data: subscription } = await supabase
       .from("organizer_subscriptions")

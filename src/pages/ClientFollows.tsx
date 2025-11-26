@@ -32,17 +32,44 @@ const ClientFollows = () => {
   }, [user]);
 
   const fetchFollows = async () => {
-    const { data, error } = await supabase
+    // Fetch follows with organizer IDs
+    const { data: followsData, error: followsError } = await supabase
       .from('follows')
-      .select(`
-        id,
-        organizer:organizers(id, name, slug, bio, avatar_url)
-      `)
+      .select('id, organizer_id')
       .eq('user_id', user?.id);
 
-    if (!error && data) {
-      setFollows(data as any);
+    if (followsError || !followsData) {
+      setLoading(false);
+      return;
     }
+
+    // Get organizer IDs
+    const organizerIds = followsData.map(f => f.organizer_id);
+
+    if (organizerIds.length === 0) {
+      setFollows([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch organizer public details from the public view
+    const { data: organizersData, error: organizersError } = await supabase
+      .from('public_organizers_view')
+      .select('id, name, slug, bio, avatar_url')
+      .in('id', organizerIds);
+
+    if (organizersError || !organizersData) {
+      setLoading(false);
+      return;
+    }
+
+    // Combine the data
+    const combined = followsData.map(follow => ({
+      id: follow.id,
+      organizer: organizersData.find(org => org.id === follow.organizer_id)!
+    })).filter(f => f.organizer); // Filter out any missing organizers
+
+    setFollows(combined as any);
     setLoading(false);
   };
 
