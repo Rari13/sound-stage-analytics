@@ -65,7 +65,7 @@ const VerifyEmail = () => {
             onClick={handleResend} 
             disabled={loading || sent}
             className="w-full" 
-            variant="hero"
+            variant="accent"
             size="lg"
           >
             {loading ? "Envoi..." : sent ? "Email envoyé ✓" : "Renvoyer l'email"}

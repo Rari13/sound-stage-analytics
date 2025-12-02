@@ -233,7 +233,7 @@ const OrganizerHome = () => {
               </Button>
             </Link>
             <Link to="/orga/events/create">
-              <Button variant="hero" size="lg">
+              <Button variant="accent" size="lg">
                 <Plus className="mr-2" />
                 Nouvel événement
               </Button>
@@ -384,7 +384,7 @@ const OrganizerHome = () => {
                   Créez votre premier événement pour commencer
                 </p>
                 <Link to="/orga/events/create">
-                  <Button variant="hero">
+                  <Button variant="accent">
                     <Plus className="mr-2" />
                     Créer un événement
                   </Button>

@@ -427,7 +427,7 @@ const EventCreate = () => {
               ))}
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full" variant="hero" size="lg">
+            <Button type="submit" disabled={loading} className="w-full" variant="accent" size="lg">
               {loading ? "Création..." : "Créer l'événement"}
             </Button>
           </form>

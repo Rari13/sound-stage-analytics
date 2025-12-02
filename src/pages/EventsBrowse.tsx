@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Search, ArrowLeft, Filter, X } from "lucide-react";
+import { Calendar, MapPin, Search, ArrowLeft, SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,6 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const MUSIC_GENRES = [
   "Hip-Hop", "Rap", "R&B", "Pop", "Rock", "Électro", "Techno", "House",
@@ -27,6 +33,7 @@ interface Event {
   starts_at: string;
   slug: string;
   cover_image: any;
+  banner_url: string | null;
   music_genres: string[] | null;
 }
 
@@ -37,7 +44,6 @@ const EventsBrowse = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date");
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -46,7 +52,7 @@ const EventsBrowse = () => {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, title, subtitle, city, venue, starts_at, slug, cover_image, music_genres')
+      .select('id, title, subtitle, city, venue, starts_at, slug, cover_image, banner_url, music_genres')
       .eq('status', 'published')
       .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
@@ -87,163 +93,187 @@ const EventsBrowse = () => {
 
   const hasActiveFilters = selectedGenre !== "all" || sortBy !== "date" || searchTerm;
 
+  const getEventImage = (event: Event) => {
+    return event.banner_url || event.cover_image?.url || null;
+  };
+
   return (
-    <div className="min-h-screen p-3 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
-        <div className="space-y-3 md:space-y-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-2 md:mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
-          </Button>
-          <h1 className="text-2xl md:text-4xl font-bold">Découvrir les événements</h1>
-          <div className="flex flex-col md:flex-row gap-4">
+    <div className="min-h-screen bg-background">
+      {/* Header - Fixed */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom ou ville..."
+                placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12"
+                className="pl-10 h-11 bg-secondary border-0"
               />
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="h-12"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtres
-              {hasActiveFilters && (
-                <span className="ml-2 px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
-                  •
-                </span>
-              )}
-            </Button>
-          </div>
 
-          {showFilters && (
-            <Card className="p-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Genre musical</label>
-                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les genres" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les genres</SelectItem>
-                      {MUSIC_GENRES.map((genre) => (
-                        <SelectItem key={genre} value={genre}>
-                          {genre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Trier par</label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date">Date (plus proche)</SelectItem>
-                      <SelectItem value="recent">Date (plus récent)</SelectItem>
-                      <SelectItem value="city">Ville (A-Z)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {hasActiveFilters && (
-                  <div className="flex items-end">
+            {/* Filter Sheet for Mobile */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0 relative">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  {hasActiveFilters && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-accent rounded-full" />
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-auto rounded-t-3xl">
+                <SheetHeader className="pb-4">
+                  <SheetTitle>Filtres</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-6 pb-8">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Genre musical</label>
+                    <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Tous les genres" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les genres</SelectItem>
+                        {MUSIC_GENRES.map((genre) => (
+                          <SelectItem key={genre} value={genre}>
+                            {genre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Trier par</label>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Date (plus proche)</SelectItem>
+                        <SelectItem value="recent">Date (plus récent)</SelectItem>
+                        <SelectItem value="city">Ville (A-Z)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {hasActiveFilters && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       onClick={clearFilters}
-                      className="h-10"
+                      className="w-full"
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Réinitialiser
+                      Réinitialiser les filtres
                     </Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
+      </header>
+
+      {/* Content */}
+      <main className="container mx-auto px-4 py-6">
+        <h1 className="text-xl font-semibold mb-6">
+          {filteredEvents.length > 0 
+            ? `${filteredEvents.length} événement${filteredEvents.length > 1 ? 's' : ''}`
+            : 'Événements'
+          }
+        </h1>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement...</p>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-4 animate-pulse">
+                <div className="w-28 h-28 md:w-32 md:h-32 bg-muted rounded-xl shrink-0" />
+                <div className="flex-1 space-y-3 py-2">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-xl font-semibold mb-2">Aucun événement trouvé</p>
-            <p className="text-muted-foreground">
+          <div className="text-center py-16">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="font-semibold mb-1">Aucun événement trouvé</p>
+            <p className="text-sm text-muted-foreground">
               {searchTerm ? "Essayez une autre recherche" : "Revenez bientôt !"}
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
-              <Link key={event.id} to={`/events/${event.slug}`}>
-                <Card className="overflow-hidden hover:shadow-glow transition-all cursor-pointer">
-                  {event.cover_image?.url && (
-                    <div className="h-48 bg-muted overflow-hidden">
-                      <img
-                        src={event.cover_image.url}
-                        alt={event.title}
-                        className="w-full h-full object-cover"
-                      />
+              <Link 
+                key={event.id} 
+                to={`/events/${event.slug}`}
+                className="flex flex-col bg-card rounded-2xl overflow-hidden border border-border hover:shadow-card-hover transition-shadow duration-200"
+              >
+                {/* Image - 4:5 ratio on mobile, 16:9 on desktop */}
+                <div className="aspect-4/5 md:aspect-video bg-muted relative overflow-hidden">
+                  {getEventImage(event) ? (
+                    <img
+                      src={getEventImage(event)!}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Calendar className="h-12 w-12 text-muted-foreground/50" />
                     </div>
                   )}
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{event.title}</h3>
-                      {event.subtitle && (
-                        <p className="text-sm text-muted-foreground">{event.subtitle}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.starts_at).toLocaleDateString('fr-FR', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{event.venue}, {event.city}</span>
-                      </div>
-                    </div>
-                    {event.music_genres && event.music_genres.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {event.music_genres.slice(0, 3).map((genre) => (
-                          <span key={genre} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <Button className="w-full" variant="outline">
-                      Voir les détails
-                    </Button>
+                  
+                  {/* Date badge */}
+                  <div className="absolute top-3 left-3 bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                    <p className="text-xs font-semibold">
+                      {new Date(event.starts_at).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </p>
                   </div>
-                </Card>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-2">
+                  <h3 className="font-semibold line-clamp-1">{event.title}</h3>
+                  
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span className="line-clamp-1">{event.venue}, {event.city}</span>
+                  </div>
+
+                  {event.music_genres && event.music_genres.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {event.music_genres.slice(0, 2).map((genre) => (
+                        <span 
+                          key={genre} 
+                          className="px-2 py-0.5 bg-secondary text-xs rounded-full"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Link>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

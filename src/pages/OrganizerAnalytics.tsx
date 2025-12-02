@@ -172,7 +172,7 @@ const OrganizerAnalytics = () => {
                 Premium Active
               </Badge>
             ) : (
-              <Button variant="hero" size="lg" onClick={handleUpgrade} disabled={upgrading}>
+              <Button variant="accent" size="lg" onClick={handleUpgrade} disabled={upgrading}>
                 {upgrading ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
