@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Clock, ArrowLeft, Users, Euro, Minus, Plus, ShoppingCart } from "lucide-react";
+import { FloatingInput } from "@/components/ui/FloatingInput";
+import { Calendar, MapPin, Clock, ArrowLeft, Minus, Plus, Ticket, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -48,6 +46,7 @@ const EventDetails = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [guestEmailDialogOpen, setGuestEmailDialogOpen] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -66,8 +65,6 @@ const EventDetails = () => {
 
       setEvent(eventData);
 
-      // Récupère tous les tarifs visibles dès la publication de l'événement
-      // Les dates starts_at/ends_at ne limitent pas l'affichage - les billets sont disponibles immédiatement
       const { data: tiersData } = await supabase
         .from('price_tiers')
         .select('id, name, price_cents, quota, hidden, starts_at, ends_at')
@@ -87,8 +84,14 @@ const EventDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Chargement...</p>
+      <div className="min-h-screen bg-background">
+        <div className="animate-pulse">
+          <div className="aspect-4/5 md:aspect-video bg-muted" />
+          <div className="p-4 space-y-4">
+            <div className="h-6 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -96,7 +99,7 @@ const EventDetails = () => {
   if (!event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold mb-4">Événement introuvable</h1>
+        <h1 className="text-xl font-semibold mb-4">Événement introuvable</h1>
         <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
       </div>
     );
@@ -105,7 +108,7 @@ const EventDetails = () => {
   const updateQuantity = (tierId: string, delta: number) => {
     setQuantities(prev => {
       const current = prev[tierId] || 0;
-      const newQty = Math.max(0, Math.min(10, current + delta)); // Max 10 per tier
+      const newQty = Math.max(0, Math.min(10, current + delta));
       return { ...prev, [tierId]: newQty };
     });
   };
@@ -116,13 +119,30 @@ const EventDetails = () => {
     return sum + (tier.price_cents * qty);
   }, 0);
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError("L'email est requis");
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError("Format d'email invalide");
+      return false;
+    }
+    if (email.length > 255) {
+      setEmailError("L'email est trop long");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
   const handleCheckout = async () => {
     if (totalTickets === 0) {
-      toast.error("Veuillez sélectionner au moins un billet");
+      toast.error("Sélectionnez au moins un billet");
       return;
     }
 
-    // If user is not logged in, ask for email
     if (!user) {
       setGuestEmailDialogOpen(true);
       return;
@@ -143,14 +163,12 @@ const EventDetails = () => {
         .filter(([_, qty]) => qty > 0)
         .map(([tierId, qty]) => ({ tierId, qty }));
 
-      // Check if all selected tiers are free
       const isFreeEvent = items.every(item => {
         const tier = priceTiers.find(t => t.id === item.tierId);
         return tier && tier.price_cents === 0;
       });
 
       if (isFreeEvent) {
-        // Use free reservation flow for completely free events
         const { data, error } = await supabase.functions.invoke("create-free-reservation", {
           body: { eventId: event.id, items, customerEmail: email },
         });
@@ -160,14 +178,12 @@ const EventDetails = () => {
         if (data?.orderId) {
           setGuestEmailDialogOpen(false);
           setGuestEmail("");
-          // Redirect to success page with order ID
           navigate(`/payment-success?session_id=${data.orderId}`);
-          toast.success("Réservation confirmée ! Vérifiez votre email pour vos billets.");
+          toast.success("Réservation confirmée !");
         } else {
           throw new Error("No order ID returned");
         }
       } else {
-        // Use Stripe Checkout for paid events
         const { data, error } = await supabase.functions.invoke("create-checkout", {
           body: { eventId: event.id, items, customerEmail: email },
         });
@@ -175,7 +191,6 @@ const EventDetails = () => {
         if (error) throw error;
 
         if (data?.url) {
-          // Open Stripe Checkout in new tab
           window.open(data.url, '_blank');
           setGuestEmailDialogOpen(false);
           setGuestEmail("");
@@ -185,23 +200,34 @@ const EventDetails = () => {
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error(error.message || "Erreur lors de la création de la commande");
+      toast.error(error.message || "Erreur lors de la commande");
     } finally {
       setCheckoutLoading(false);
     }
   };
 
   const handleGuestCheckout = () => {
-    if (!guestEmail || !guestEmail.includes('@')) {
-      toast.error("Veuillez entrer un email valide");
-      return;
-    }
+    if (!validateEmail(guestEmail)) return;
     processCheckout(guestEmail);
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="relative h-64 md:h-96 overflow-hidden">
+    <div className="min-h-screen bg-background pb-32">
+      {/* Header with back button */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg">
+        <div className="container mx-auto px-4 py-3 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero Image - 4:5 on mobile */}
+      <div className="aspect-4/5 md:aspect-video relative overflow-hidden bg-muted">
         {event.banner_url ? (
           <img 
             src={event.banner_url} 
@@ -209,178 +235,203 @@ const EventDetails = () => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
-            <Calendar className="h-24 w-24 text-primary-foreground opacity-50" />
+          <div className="w-full h-full flex items-center justify-center bg-secondary">
+            <Calendar className="h-16 w-16 text-muted-foreground/50" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="container mx-auto max-w-4xl px-3 md:px-4 -mt-20 md:-mt-32 relative z-10">
-        <Button 
-          variant="ghost" 
-          className="mb-4 md:mb-6 bg-background/80 backdrop-blur-sm"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Button>
+      {/* Content */}
+      <div className="container mx-auto px-4 -mt-6 relative z-10">
+        <Card className="p-5 space-y-6">
+          {/* Event Info */}
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold">{event.title}</h1>
+            {event.subtitle && (
+              <p className="text-muted-foreground">{event.subtitle}</p>
+            )}
+          </div>
 
-        <Card className="p-4 md:p-8 space-y-4 md:space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold mb-2">{event.title}</h1>
-                {event.subtitle && (
-                  <p className="text-xl text-muted-foreground">{event.subtitle}</p>
-                )}
+          {/* Date & Location */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                <Calendar className="h-5 w-5" />
               </div>
-              <Badge variant={event.status === 'published' ? 'default' : 'secondary'}>
-                {event.status === 'published' ? 'Publié' : 'Brouillon'}
-              </Badge>
+              <div>
+                <p className="font-medium">
+                  {format(new Date(event.starts_at), "EEEE d MMMM yyyy", { locale: fr })}
+                </p>
+                <p className="text-muted-foreground">
+                  {format(new Date(event.starts_at), "HH:mm", { locale: fr })} - {format(new Date(event.ends_at), "HH:mm", { locale: fr })}
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                <span>{format(new Date(event.starts_at), "d MMMM yyyy", { locale: fr })}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                <span>
-                  {format(new Date(event.starts_at), "HH:mm", { locale: fr })} - {format(new Date(event.ends_at), "HH:mm", { locale: fr })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                 <MapPin className="h-5 w-5" />
-                <span>{event.venue}, {event.city}</span>
               </div>
-              {event.capacity && (
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <span>{event.capacity} places</span>
-                </div>
-              )}
+              <div>
+                <p className="font-medium">{event.venue}</p>
+                <p className="text-muted-foreground">{event.city}</p>
+              </div>
             </div>
           </div>
 
+          {/* Description */}
           {event.description && (
-            <div className="pt-6 border-t">
-              <h2 className="text-2xl font-bold mb-4">À propos</h2>
-              <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+            <div className="pt-4 border-t">
+              <h2 className="font-semibold mb-3">À propos</h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {event.description}
+              </p>
             </div>
           )}
 
+          {/* Tickets */}
           {priceTiers.length > 0 && (
-            <div className="pt-6 border-t">
-              <h2 className="text-2xl font-bold mb-4">Billets</h2>
-              <div className="grid gap-4">
-                {priceTiers.map((tier) => (
-                  <Card key={tier.id} className="p-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{tier.name}</h3>
-                        {tier.quota && (
-                          <p className="text-sm text-muted-foreground">{tier.quota} places disponibles</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1 text-xl font-bold">
-                          {(tier.price_cents / 100).toFixed(2)} €
+            <div className="pt-4 border-t">
+              <h2 className="font-semibold mb-4">Billets</h2>
+              <div className="space-y-3">
+                {priceTiers.map((tier) => {
+                  const qty = quantities[tier.id] || 0;
+                  const isSelected = qty > 0;
+                  
+                  return (
+                    <div 
+                      key={tier.id} 
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                        isSelected 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{tier.name}</h3>
+                            {isSelected && (
+                              <Check className="h-4 w-4 text-success animate-check" />
+                            )}
+                          </div>
+                          <p className="text-lg font-semibold mt-1">
+                            {tier.price_cents === 0 
+                              ? 'Gratuit' 
+                              : `${(tier.price_cents / 100).toFixed(2)} €`
+                            }
+                          </p>
                         </div>
+                        
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => updateQuantity(tier.id, -1)}
-                            disabled={!quantities[tier.id]}
+                            disabled={qty === 0}
+                            className="h-10 w-10"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className="w-8 text-center font-semibold">
-                            {quantities[tier.id] || 0}
+                          <span className="w-8 text-center font-semibold tabular-nums">
+                            {qty}
                           </span>
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => updateQuantity(tier.id, 1)}
-                            disabled={(quantities[tier.id] || 0) >= 10}
+                            disabled={qty >= 10}
+                            className="h-10 w-10"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     </div>
-                  </Card>
-                ))}
+                  );
+                })}
               </div>
-
-              {totalTickets > 0 && (
-                <Card className="p-4 mt-4 bg-primary/5">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-semibold">Total ({totalTickets} billet{totalTickets > 1 ? 's' : ''})</span>
-                    <span className="text-2xl font-bold">{(totalAmount / 100).toFixed(2)} €</span>
-                  </div>
-                </Card>
-              )}
-
-              <Button 
-                className="w-full mt-4" 
-                size="lg"
-                onClick={handleCheckout}
-                disabled={totalTickets === 0 || checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  "Chargement..."
-                ) : (
-                  <>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    {totalAmount === 0 ? 'Réserver' : 'Acheter'} ({(totalAmount / 100).toFixed(2)} €)
-                  </>
-                )}
-              </Button>
             </div>
           )}
         </Card>
       </div>
 
+      {/* Fixed Bottom Bar - Thumb Zone */}
+      {priceTiers.length > 0 && (
+        <div className="thumb-zone-bar animate-slide-up">
+          <div className="container mx-auto max-w-4xl">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">
+                  {totalTickets > 0 ? `${totalTickets} billet${totalTickets > 1 ? 's' : ''}` : 'Sélectionnez vos billets'}
+                </p>
+                <p className="text-xl font-bold">
+                  {(totalAmount / 100).toFixed(2)} €
+                </p>
+              </div>
+              
+              <Button 
+                variant="accent"
+                size="lg"
+                onClick={handleCheckout}
+                disabled={totalTickets === 0 || checkoutLoading}
+                className="shrink-0 px-8"
+              >
+                {checkoutLoading ? (
+                  <span className="animate-pulse">Chargement...</span>
+                ) : (
+                  <>
+                    <Ticket className="h-5 w-5 mr-2" />
+                    {totalAmount === 0 ? 'Réserver' : 'Payer'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Guest Email Dialog */}
       <Dialog open={guestEmailDialogOpen} onOpenChange={setGuestEmailDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Finaliser votre commande</DialogTitle>
+            <DialogTitle>Finalisez votre commande</DialogTitle>
             <DialogDescription>
-              Veuillez entrer votre email pour continuer vers le paiement
+              Entrez votre email pour recevoir vos billets
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="guest-email">Email *</Label>
-              <Input
-                id="guest-email"
-                type="email"
-                placeholder="votre@email.com"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleGuestCheckout()}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                className="flex-1" 
-                onClick={handleGuestCheckout}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? "Chargement..." : "Continuer"}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setGuestEmailDialogOpen(false)}
-                disabled={checkoutLoading}
-              >
-                Annuler
-              </Button>
-            </div>
+            <FloatingInput
+              label="Adresse email"
+              type="email"
+              value={guestEmail}
+              onChange={(e) => {
+                setGuestEmail(e.target.value);
+                if (emailError) validateEmail(e.target.value);
+              }}
+              onBlur={() => guestEmail && validateEmail(guestEmail)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGuestCheckout()}
+              error={emailError}
+              valid={!emailError && guestEmail.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)}
+              autoFocus
+            />
+            <Button 
+              variant="accent"
+              className="w-full" 
+              size="lg"
+              onClick={handleGuestCheckout}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading ? "Chargement..." : "Continuer"}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full"
+              onClick={() => setGuestEmailDialogOpen(false)}
+              disabled={checkoutLoading}
+            >
+              Annuler
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -2,60 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* 
+  MINIMALIST DESIGN SYSTEM
+  Philosophy: "Less is more" - Airbnb/Eventbrite inspired
+  Light, clean, with generous whitespace
 */
 
 @layer base {
   :root {
-    --background: 240 40% 8%;
-    --foreground: 0 0% 98%;
+    /* Light, clean backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
 
-    --card: 240 35% 12%;
-    --card-foreground: 0 0% 98%;
+    /* Subtle card backgrounds */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
 
-    --popover: 240 40% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 271 68% 51%;
-    --primary-hover: 271 68% 45%;
+    /* Primary: Deep black for maximum contrast */
+    --primary: 0 0% 8%;
+    --primary-hover: 0 0% 18%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 25% 18%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Very light gray */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 8%;
 
-    --accent: 38 92% 50%;
-    --accent-hover: 38 92% 45%;
-    --accent-foreground: 240 40% 8%;
+    /* Accent: Vibrant coral/orange for CTAs */
+    --accent: 12 90% 55%;
+    --accent-hover: 12 90% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --muted: 240 20% 20%;
-    --muted-foreground: 240 5% 64%;
+    /* Muted tones */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 20% 20%;
-    --input: 240 20% 20%;
-    --ring: 271 68% 51%;
+    /* Borders: Ultra subtle */
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 8%;
 
-    --radius: 0.75rem;
+    /* Radius: Smooth, modern */
+    --radius: 1rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(271 68% 51%), hsl(271 68% 40%));
-    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 40%));
-    --gradient-hero: linear-gradient(135deg, hsl(271 68% 51%), hsl(38 92% 50%));
-
-    /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(240 40% 4% / 0.4);
-    --shadow-medium: 0 4px 16px hsl(240 40% 4% / 0.5);
-    --shadow-strong: 0 8px 32px hsl(240 40% 4% / 0.6);
-    --shadow-glow: 0 0 24px hsl(271 68% 51% / 0.3);
-    --shadow-accent-glow: 0 0 24px hsl(38 92% 50% / 0.3);
-
-    /* Transitions */
-    --transition-fast: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* Success state */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
   }
 }
 
@@ -69,29 +67,154 @@ All colors MUST be HSL.
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Typography - Clean, minimal hierarchy */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+    @apply font-semibold tracking-tight text-foreground;
   }
 
   h1 {
-    @apply text-3xl md:text-5xl lg:text-6xl;
+    @apply text-2xl md:text-4xl;
   }
 
   h2 {
-    @apply text-2xl md:text-4xl lg:text-5xl;
+    @apply text-xl md:text-2xl;
   }
 
   h3 {
-    @apply text-xl md:text-2xl lg:text-3xl;
+    @apply text-lg md:text-xl;
   }
 
-  /* Mobile optimizations */
+  /* Mobile optimizations - 16px minimum for iOS */
   input, textarea, select, button {
-    @apply text-base; /* Minimum 16px to prevent zoom on iOS */
+    @apply text-base;
   }
 
-  /* Better tap targets on mobile */
+  /* Better tap targets */
   button, a {
     @apply min-h-[44px];
   }
+}
+
+/* Floating Label Input Styles */
+@layer components {
+  .floating-input-wrapper {
+    @apply relative;
+  }
+
+  .floating-input {
+    @apply w-full h-14 px-4 pt-5 pb-2 text-base bg-background border border-border rounded-xl;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+    @apply transition-all duration-200 ease-out;
+    @apply peer;
+  }
+
+  .floating-input:focus,
+  .floating-input:not(:placeholder-shown) {
+    @apply border-primary;
+  }
+
+  .floating-label {
+    @apply absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground;
+    @apply transition-all duration-200 ease-out pointer-events-none;
+    @apply peer-focus:top-3.5 peer-focus:text-xs peer-focus:text-primary;
+    @apply peer-[:not(:placeholder-shown)]:top-3.5 peer-[:not(:placeholder-shown)]:text-xs;
+  }
+
+  /* Validation states */
+  .floating-input.valid {
+    @apply border-success;
+  }
+
+  .floating-input.invalid {
+    @apply border-destructive;
+  }
+
+  .floating-input.valid + .floating-label {
+    @apply text-success;
+  }
+
+  .floating-input.invalid + .floating-label {
+    @apply text-destructive;
+  }
+}
+
+/* Micro-animations */
+@layer utilities {
+  .animate-tap {
+    @apply active:scale-95 transition-transform duration-100;
+  }
+
+  .animate-press {
+    @apply active:scale-[0.98] transition-transform duration-150 ease-out;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 0.6s ease-out;
+  }
+
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0.4); }
+    100% { box-shadow: 0 0 0 12px hsl(var(--accent) / 0); }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 0.6s ease-out;
+  }
+
+  @keyframes check-in {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-check {
+    animation: check-in 0.4s ease-out forwards;
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Skeleton loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton {
+    @apply bg-gradient-to-r from-muted via-background to-muted bg-[length:200%_100%];
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Safe area for fixed bottom elements (iPhone notch) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Thumb zone - fixed bottom bar */
+.thumb-zone-bar {
+  @apply fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border;
+  @apply safe-bottom;
 }

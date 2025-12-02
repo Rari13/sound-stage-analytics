@@ -123,7 +123,7 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
             onClick={handleStartScan}
             className="w-full"
             size="lg"
-            variant="hero"
+            variant="accent"
           >
             <Camera className="h-5 w-5 mr-2" />
             📸 Ouvrir la caméra

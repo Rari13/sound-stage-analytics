@@ -283,7 +283,7 @@ const OrganizerScan = () => {
                 onClick={startSession} 
                 disabled={!selectedEvent || !selectedDevice || loading}
                 className="w-full"
-                variant="hero"
+                variant="accent"
                 size="lg"
               >
                 Démarrer la session
@@ -300,7 +300,7 @@ const OrganizerScan = () => {
                 <>
                   <Button
                     onClick={() => setShowScanner(true)}
-                    variant="hero"
+                    variant="accent"
                     size="lg"
                     className="w-full mb-4"
                   >
