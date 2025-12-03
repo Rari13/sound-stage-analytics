@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import OrganizerLayout from "./layouts/OrganizerLayout";
+import ClientLayout from "./layouts/ClientLayout";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignupClient from "./pages/SignupClient";
@@ -35,11 +36,13 @@ const App = () => (
       <Route path="/signup-organizer" element={<SignupOrganizer />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/events/browse" element={<EventsBrowse />} />
+      
+      {/* Client Routes with Layout */}
       <Route 
         path="/client/home" 
         element={
           <ProtectedRoute requireRole="client">
-            <ClientHome />
+            <ClientLayout><ClientHome /></ClientLayout>
           </ProtectedRoute>
         } 
       />
@@ -47,7 +50,7 @@ const App = () => (
         path="/client/profile" 
         element={
           <ProtectedRoute requireRole="client">
-            <ClientProfile />
+            <ClientLayout><ClientProfile /></ClientLayout>
           </ProtectedRoute>
         } 
       />
@@ -55,7 +58,7 @@ const App = () => (
         path="/client/tickets"
         element={
           <ProtectedRoute requireRole="client">
-            <ClientTickets />
+            <ClientLayout><ClientTickets /></ClientLayout>
           </ProtectedRoute>
         } 
       />
@@ -63,7 +66,7 @@ const App = () => (
         path="/client/follows" 
         element={
           <ProtectedRoute requireRole="client">
-            <ClientFollows />
+            <ClientLayout><ClientFollows /></ClientLayout>
           </ProtectedRoute>
         } 
       />
