@@ -2,6 +2,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import OrganizerLayout from "./layouts/OrganizerLayout";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignupClient from "./pages/SignupClient";
@@ -9,6 +10,8 @@ import SignupOrganizer from "./pages/SignupOrganizer";
 import ClientHome from "./pages/ClientHome";
 import ClientProfile from "./pages/ClientProfile";
 import OrganizerHome from "./pages/OrganizerHome";
+import OrganizerEvents from "./pages/OrganizerEvents";
+import OrganizerProfile from "./pages/OrganizerProfile";
 import EventsBrowse from "./pages/EventsBrowse";
 import ClientTickets from "./pages/ClientTickets";
 import ClientFollows from "./pages/ClientFollows";
@@ -64,11 +67,25 @@ const App = () => (
           </ProtectedRoute>
         } 
       />
+      
+      {/* Organizer Routes with Layout */}
       <Route 
         path="/orga/home" 
         element={
           <ProtectedRoute requireRole="organizer">
-            <OrganizerHome />
+            <OrganizerLayout>
+              <OrganizerHome />
+            </OrganizerLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/events" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerLayout>
+              <OrganizerEvents />
+            </OrganizerLayout>
           </ProtectedRoute>
         } 
       />
@@ -76,7 +93,27 @@ const App = () => (
         path="/orga/scan" 
         element={
           <ProtectedRoute requireRole="organizer">
-            <OrganizerScan />
+            <OrganizerLayout>
+              <OrganizerScan />
+            </OrganizerLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/analytics" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerLayout>
+              <OrganizerAnalytics />
+            </OrganizerLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/profile" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerProfile />
           </ProtectedRoute>
         } 
       />
@@ -96,17 +133,10 @@ const App = () => (
           </ProtectedRoute>
         } 
       />
+      
       <Route path="/events/:slug" element={<EventDetails />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-      <Route
-        path="/orga/analytics" 
-        element={
-          <ProtectedRoute requireRole="organizer">
-            <OrganizerAnalytics />
-          </ProtectedRoute>
-        } 
-      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </TooltipProvider>
