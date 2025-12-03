@@ -2,128 +2,50 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Sparkles, Lock, BarChart3, Brain, MapPin, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { Brain, Users, Heart, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin } from "lucide-react";
+import { DataImporter } from "@/components/DataImporter";
+import { toast } from "sonner";
 
-interface SalesData {
-  date: string;
-  tickets: number;
-  revenue: number;
-}
-
-const OrganizerAnalytics = () => {
+export default function OrganizerAnalytics() {
   const { user } = useAuth();
-  const { subscription, loading: subLoading, isPremium, organizerId, upgradeToPremium } = useSubscription();
-  const { toast } = useToast();
-  const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const { isPremium, organizerId, upgradeToPremium } = useSubscription();
   const [aiLoading, setAiLoading] = useState(false);
-  const [selectedCity, setSelectedCity] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [audienceStats, setAudienceStats] = useState({ followers: 0 });
   const [upgrading, setUpgrading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState("");
 
   useEffect(() => {
-    const fetchSalesData = async () => {
-      if (!user || !organizerId) return;
-
-      try {
-        const { data: orgData } = await supabase
-          .from("organizers")
-          .select("id")
-          .eq("owner_user_id", user.id)
-          .single();
-
-        if (!orgData) return;
-
-        // Get all events
-        const { data: events } = await supabase
-          .from("events")
-          .select("id")
-          .eq("organizer_id", orgData.id);
-
-        if (!events) return;
-
-        // Get orders for the last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const eventIds = events.map(e => e.id);
-        
-        const { data: orders } = await supabase
-          .from("orders")
-          .select("created_at, amount_total_cents, event_id")
-          .in("event_id", eventIds)
-          .eq("status", "completed")
-          .gte("created_at", thirtyDaysAgo.toISOString());
-
-        // Group by date
-        const grouped: Record<string, { tickets: number; revenue: number }> = {};
-        
-        orders?.forEach(order => {
-          const date = format(new Date(order.created_at), "dd MMM", { locale: fr });
-          if (!grouped[date]) {
-            grouped[date] = { tickets: 0, revenue: 0 };
-          }
-          grouped[date].tickets += 1;
-          grouped[date].revenue += order.amount_total_cents / 100;
-        });
-
-        const chartData = Object.entries(grouped).map(([date, data]) => ({
-          date,
-          tickets: data.tickets,
-          revenue: data.revenue,
-        }));
-
-        setSalesData(chartData);
-      } catch (error) {
-        console.error("Error fetching sales data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (organizerId) {
-      fetchSalesData();
+      supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("organizer_id", organizerId)
+        .then(({ count }) =>
+          setAudienceStats((prev) => ({ ...prev, followers: count || 0 }))
+        );
     }
-  }, [user, organizerId]);
+  }, [organizerId]);
 
-  const handleAIAnalysis = async (type: string, eventId?: string, city?: string) => {
+  const handleAIAnalysis = async (type: string, city?: string) => {
     if (!isPremium) {
-      toast({
-        title: "Abonnement Premium requis",
-        description: "Cette fonctionnalité nécessite un abonnement Premium.",
-        variant: "destructive",
-      });
+      toast.error("Fonctionnalité Premium requise");
       return;
     }
-
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-analytics", {
-        body: { type, organizerId, eventId, city },
+        body: { type, organizerId, city },
       });
-
       if (error) throw error;
-
       setAiAnalysis(data.analysis);
-      toast({
-        title: "Analyse terminée",
-        description: "L'IA a généré votre rapport d'analyse.",
-      });
-    } catch (error: any) {
-      console.error("Error calling AI:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de générer l'analyse IA.",
-        variant: "destructive",
-      });
+      toast.success("Analyse générée");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'analyse IA");
     } finally {
       setAiLoading(false);
     }
@@ -132,233 +54,163 @@ const OrganizerAnalytics = () => {
   const handleUpgrade = async () => {
     setUpgrading(true);
     const result = await upgradeToPremium();
-    
     if (result.success) {
-      toast({
-        title: "Abonnement activé",
-        description: "Vous avez maintenant accès aux fonctionnalités Premium !",
-      });
+      toast.success("Abonnement Premium activé !");
     } else {
-      toast({
-        title: "Erreur",
-        description: result.error || "Impossible d'activer l'abonnement.",
-        variant: "destructive",
-      });
+      toast.error(result.error || "Erreur lors de l'activation");
     }
     setUpgrading(false);
   };
 
-  if (subLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen p-3 md:p-8">
-      <div className="container mx-auto max-w-7xl space-y-6 md:space-y-8">
-        {/* Header with subscription status */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
-          <div>
-            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Analytiques & IA</h1>
-            <p className="text-sm md:text-base text-muted-foreground">Insights avancés pour vos événements</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {isPremium ? (
-              <Badge variant="default" className="px-4 py-2">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Premium Active
-              </Badge>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Intelligence</h1>
+        {!isPremium && (
+          <Button variant="accent" size="sm" onClick={handleUpgrade} disabled={upgrading}>
+            {upgrading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Button variant="accent" size="lg" onClick={handleUpgrade} disabled={upgrading}>
-                {upgrading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-5 w-5" />
-                )}
-                Passer à Premium - 100€/mois
-              </Button>
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Premium
+          </Button>
+        )}
+      </div>
+
+      {/* KPIs Audience */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 text-center">
+            <Users className="h-5 w-5 text-primary mx-auto mb-1" />
+            <div className="text-2xl font-bold">{audienceStats.followers}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Abonnés
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-pink-500/20 bg-pink-500/5">
+          <CardContent className="p-4 text-center">
+            <Heart className="h-5 w-5 text-pink-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold">--</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Likes
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-green-500/20 bg-green-500/5">
+          <CardContent className="p-4 text-center">
+            <MousePointerClick className="h-5 w-5 text-green-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold">--%</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Conv.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Insight Psychologique */}
+      <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5 overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-3 opacity-5">
+          <Brain className="h-24 w-24" />
+        </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Brain className="h-5 w-5 text-primary" />
+            Psychologie Client
+          </CardTitle>
+          <CardDescription>
+            Analyse comportementale de votre audience
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-background/60 backdrop-blur rounded-xl border text-sm leading-relaxed min-h-[80px]">
+            {aiAnalysis || (
+              <span className="text-muted-foreground">
+                Cliquez sur le bouton pour analyser le comportement de vos
+                clients et obtenir des conseils stratégiques.
+              </span>
             )}
           </div>
-        </div>
-
-        <Tabs defaultValue="charts" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="charts">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Graphiques
-            </TabsTrigger>
-            <TabsTrigger value="insights" disabled={!isPremium}>
-              <Brain className="mr-2 h-4 w-4" />
-              Insights IA
-              {!isPremium && <Lock className="ml-2 h-3 w-3" />}
-            </TabsTrigger>
-            <TabsTrigger value="market" disabled={!isPremium}>
-              <MapPin className="mr-2 h-4 w-4" />
-              Analyse de marché
-              {!isPremium && <Lock className="ml-2 h-3 w-3" />}
-            </TabsTrigger>
-            <TabsTrigger value="predictions" disabled={!isPremium}>
+          <Button
+            onClick={() => handleAIAnalysis("general-insights")}
+            disabled={aiLoading || !isPremium}
+            className="w-full"
+          >
+            {aiLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
               <TrendingUp className="mr-2 h-4 w-4" />
-              Prédictions
-              {!isPremium && <Lock className="ml-2 h-3 w-3" />}
-            </TabsTrigger>
-          </TabsList>
+            )}
+            {isPremium ? "Générer l'analyse IA" : "Premium requis"}
+          </Button>
+        </CardContent>
+      </Card>
 
-          {/* Free tier: Charts */}
-          <TabsContent value="charts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Évolution des ventes (30 derniers jours)</CardTitle>
-                <CardDescription>Gratuit - Analyse basique de vos performances</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {salesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis yAxisId="left" />
-                      <YAxis yAxisId="right" orientation="right" />
-                      <Tooltip />
-                      <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="tickets" stroke="hsl(var(--primary))" name="Billets vendus" />
-                      <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="hsl(var(--accent))" name="Revenus (€)" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Aucune donnée de vente disponible
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      {/* Tabs */}
+      <Tabs defaultValue="data" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="data">Données</TabsTrigger>
+          <TabsTrigger value="market">Marché</TabsTrigger>
+        </TabsList>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Revenus par jour</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {salesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="revenue" fill="hsl(var(--accent))" name="Revenus (€)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Aucune donnée disponible
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <TabsContent value="data" className="mt-4">
+          <DataImporter organizerId={organizerId || ""} />
+        </TabsContent>
 
-          {/* Premium: General Insights */}
-          <TabsContent value="insights" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assistant IA - Insights Généraux</CardTitle>
-                <CardDescription>Obtenez des recommandations personnalisées basées sur vos performances</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  onClick={() => handleAIAnalysis("general-insights")}
-                  disabled={aiLoading}
-                  className="w-full"
+        <TabsContent value="market" className="mt-4">
+          {isPremium ? (
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Analyse de marché</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Découvrez le potentiel d'une ville
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ex: Paris, Lyon, Nancy..."
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="flex-1 px-4 py-2 rounded-lg border bg-background text-sm"
+                />
+                <Button
+                  onClick={() => handleAIAnalysis("market-analysis", selectedCity)}
+                  disabled={aiLoading || !selectedCity}
                 >
                   {aiLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Brain className="mr-2 h-4 w-4" />
+                    "Analyser"
                   )}
-                  Générer une analyse complète
                 </Button>
-
-                {aiAnalysis && (
-                  <Card className="bg-muted/50">
-                    <CardContent className="pt-6">
-                      <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                        {aiAnalysis}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
+              </div>
             </Card>
-          </TabsContent>
-
-          {/* Premium: Market Analysis */}
-          <TabsContent value="market" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analyse de marché par ville</CardTitle>
-                <CardDescription>
-                  Découvrez quels types d'événements ont le plus de potentiel dans une ville donnée
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Entrez une ville (ex: Nancy, Paris, Lyon)"
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="flex-1 px-4 py-2 rounded-md border bg-background"
-                  />
-                  <Button 
-                    onClick={() => handleAIAnalysis("market-analysis", undefined, selectedCity)}
-                    disabled={aiLoading || !selectedCity}
-                  >
-                    {aiLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <MapPin className="mr-2 h-4 w-4" />
-                    )}
-                    Analyser
-                  </Button>
-                </div>
-
-                {aiAnalysis && (
-                  <Card className="bg-muted/50">
-                    <CardContent className="pt-6">
-                      <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                        {aiAnalysis}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
+          ) : (
+            <Card className="p-8 text-center">
+              <Lock className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">
+                Analyse de marché disponible en Premium
+              </p>
+              <Button
+                variant="accent"
+                className="mt-4"
+                onClick={handleUpgrade}
+                disabled={upgrading}
+              >
+                Passer Premium
+              </Button>
             </Card>
-          </TabsContent>
-
-          {/* Premium: Predictions */}
-          <TabsContent value="predictions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Prédictions et recommandations</CardTitle>
-                <CardDescription>
-                  Fonctionnalité à venir : prédiction des ventes futures et optimisation tarifaire
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  Cette fonctionnalité sera bientôt disponible
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default OrganizerAnalytics;
+}

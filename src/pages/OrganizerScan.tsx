@@ -11,10 +11,9 @@ import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera } fr
 import { useNavigate } from "react-router-dom";
 import { QRScanner } from "@/components/QRScanner";
 
-const OrganizerScan = () => {
+export default function OrganizerScan() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -195,17 +194,11 @@ const OrganizerScan = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="container mx-auto max-w-4xl space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Scanner de billets</h1>
-            <p className="text-muted-foreground">Validation en temps réel</p>
-          </div>
-          <Button variant="ghost" onClick={() => navigate("/orga/home")}>
-            ← Retour
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold mb-1">Scanner</h1>
+        <p className="text-sm text-muted-foreground">Validation des billets en temps réel</p>
+      </div>
 
         {/* Devices Section */}
         <Card className="p-6 space-y-4">
@@ -354,7 +347,7 @@ const OrganizerScan = () => {
                       {scanResult.used_at && (
                         <p className="text-sm text-muted-foreground">
                           Utilisé le {new Date(scanResult.used_at).toLocaleString()}
-                        </p>
+                      </p>
                       )}
                     </div>
                   </div>
@@ -364,8 +357,5 @@ const OrganizerScan = () => {
           )}
         </Card>
       </div>
-    </div>
   );
-};
-
-export default OrganizerScan;
+}

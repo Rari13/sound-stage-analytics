@@ -212,6 +212,60 @@ export type Database = {
           },
         ]
       }
+      historical_events: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          date: string
+          genre: string | null
+          id: string
+          organizer_id: string
+          revenue_cents: number | null
+          tickets_sold: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          date: string
+          genre?: string | null
+          id?: string
+          organizer_id: string
+          revenue_cents?: number | null
+          tickets_sold?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          date?: string
+          genre?: string | null
+          id?: string
+          organizer_id?: string
+          revenue_cents?: number | null
+          tickets_sold?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount_total_cents: number
