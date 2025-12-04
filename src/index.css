@@ -4,31 +4,31 @@
 
 /* 
   MINIMALIST DESIGN SYSTEM
-  Philosophy: "Less is more" - Airbnb/Eventbrite inspired
-  Light, clean, with generous whitespace
+  Philosophy: "Less is more" - Apple/Uber inspired
+  Light, clean, with generous whitespace and soft shadows
 */
 
 @layer base {
   :root {
-    /* Light, clean backgrounds */
+    /* Fond : Blanc pur pour la clarté */
     --background: 0 0% 100%;
-    --foreground: 0 0% 8%;
+    --foreground: 0 0% 9%;
 
-    /* Subtle card backgrounds */
+    /* Cartes : Blanc sur blanc avec ombres */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Primary: Deep black for maximum contrast */
-    --primary: 0 0% 8%;
+    /* Primaire : Noir pur (Luxe & Sobre) */
+    --primary: 0 0% 0%;
     --primary-hover: 0 0% 18%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 0 0% 98%;
 
-    /* Secondary: Very light gray */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 8%;
+    /* Secondaire : Gris très clair pour les surfaces d'appui */
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
 
     /* Accent: Vibrant coral/orange for CTAs */
     --accent: 12 90% 55%;
@@ -36,24 +36,31 @@
     --accent-foreground: 0 0% 100%;
 
     /* Muted tones */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
     /* Destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Borders: Ultra subtle */
+    /* Bordures : Très subtiles, presque invisibles */
     --border: 0 0% 92%;
     --input: 0 0% 92%;
-    --ring: 0 0% 8%;
+    --ring: 0 0% 0%;
 
-    /* Radius: Smooth, modern */
+    /* Radius: Coins très arrondis (Apple style) */
     --radius: 1rem;
 
     /* Success state */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+
+    /* Shadows for depth */
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.03);
+    --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.06);
+    --shadow-strong: 0 -10px 40px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -67,9 +74,9 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography - Clean, minimal hierarchy */
+  /* Typography - Style éditorial (Gros, Gras, Serré) */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-foreground;
+    @apply font-bold tracking-tight text-foreground;
   }
 
   h1 {
@@ -92,6 +99,25 @@
   /* Better tap targets */
   button, a {
     @apply min-h-[44px];
+  }
+}
+
+/* Shadow utilities */
+@layer utilities {
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
   }
 }
 

@@ -10,6 +10,7 @@ import SignupClient from "./pages/SignupClient";
 import SignupOrganizer from "./pages/SignupOrganizer";
 import ClientHome from "./pages/ClientHome";
 import ClientProfile from "./pages/ClientProfile";
+import ClientDiscover from "./pages/ClientDiscover";
 import OrganizerHome from "./pages/OrganizerHome";
 import OrganizerEvents from "./pages/OrganizerEvents";
 import OrganizerProfile from "./pages/OrganizerProfile";
@@ -67,6 +68,14 @@ const App = () => (
         element={
           <ProtectedRoute requireRole="client">
             <ClientLayout><ClientFollows /></ClientLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/discover" 
+        element={
+          <ProtectedRoute requireRole="client">
+            <ClientLayout><ClientDiscover /></ClientLayout>
           </ProtectedRoute>
         } 
       />
