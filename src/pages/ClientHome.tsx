@@ -30,23 +30,10 @@ const ClientHome = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [userCity, setUserCity] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchUserCity();
-    }
     fetchEvents();
-  }, [user]);
-
-  const fetchUserCity = async () => {
-    const { data } = await supabase
-      .from('client_profiles')
-      .select('city')
-      .eq('user_id', user?.id)
-      .maybeSingle();
-    if (data?.city) setUserCity(data.city);
-  };
+  }, []);
 
   const fetchEvents = async () => {
     const { data } = await supabase
@@ -68,12 +55,12 @@ const ClientHome = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30 pb-28">
-      {/* Header - Sticky, Clean White */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border p-4">
+      {/* HEADER : Sticky, Blanc & Flouté */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border p-4 transition-all duration-200">
         <div className="flex items-center justify-between mb-4 max-w-lg mx-auto">
-          <h1 className="text-3xl font-bold tracking-tight">Découvrir</h1>
+          <h1 className="text-3xl font-bold tracking-tighter">Découvrir</h1>
           <Link to="/client/follows">
-            <Button size="icon" variant="ghost" className="rounded-full hover:bg-secondary">
+            <Button size="icon" variant="ghost" className="rounded-full hover:bg-secondary transition-colors">
               <Heart className="h-6 w-6" />
             </Button>
           </Link>
@@ -84,7 +71,7 @@ const ClientHome = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-foreground transition-colors" />
             <Input 
               placeholder="Artiste, lieu, ville..." 
-              className="pl-10 h-12 bg-secondary border-none rounded-2xl text-base focus:ring-1 focus:ring-ring transition-all"
+              className="pl-10 h-12 bg-secondary border-none rounded-2xl text-base focus:ring-1 focus:ring-ring/10 transition-all placeholder:text-muted-foreground"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -97,12 +84,12 @@ const ClientHome = () => {
         </div>
       </div>
 
-      {/* Feed - Floating White Cards */}
-      <div className="container max-w-lg mx-auto p-4 space-y-6 mt-2">
+      {/* FEED : Cartes Blanches & Ombres Douces */}
+      <div className="container max-w-lg mx-auto p-4 space-y-8 mt-2">
         {loading ? (
           <div className="space-y-6">
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-80 w-full rounded-3xl" />
+              <Skeleton key={i} className="h-80 w-full rounded-3xl bg-secondary" />
             ))}
           </div>
         ) : filteredEvents.length === 0 ? (
@@ -118,16 +105,17 @@ const ClientHome = () => {
               : 0;
 
             return (
-              <Link to={`/events/${event.slug}`} key={event.id} className="block group">
-                <div className="bg-card rounded-3xl shadow-card overflow-hidden border border-border animate-press transition-all hover:shadow-card-hover">
+              <Link to={`/events/${event.slug}`} key={event.id} className="block group animate-press">
+                <div className="bg-card rounded-3xl shadow-card overflow-hidden border border-border hover:shadow-card-hover transition-all duration-300">
                   {/* Image */}
                   <AspectRatio ratio={4/3} className="bg-secondary relative">
                     <img 
                       src={event.banner_url || "/placeholder.svg"} 
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
                     />
+                    {/* Badge Prix */}
                     <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-soft">
                       <span className="text-sm font-bold">
                         {minPrice === 0 ? "Gratuit" : `${minPrice} €`}
@@ -135,7 +123,7 @@ const ClientHome = () => {
                     </div>
                   </AspectRatio>
 
-                  {/* Content */}
+                  {/* Contenu */}
                   <div className="p-5">
                     <h2 className="text-xl font-bold leading-tight mb-2 group-hover:text-muted-foreground transition-colors">
                       {event.title}
@@ -157,6 +145,9 @@ const ClientHome = () => {
             );
           })
         )}
+        
+        {/* Espace pour le scroll final */}
+        <div className="h-8" />
       </div>
     </div>
   );

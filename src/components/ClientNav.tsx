@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Compass, Ticket, User } from "lucide-react";
+import { Home, Flame, Ticket, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ClientNav() {
@@ -9,7 +9,7 @@ export function ClientNav() {
 
   const navItems = [
     { label: "Accueil", icon: Home, path: "/client/home" },
-    { label: "Découvrir", icon: Compass, path: "/events/browse" },
+    { label: "Découvrir", icon: Flame, path: "/client/discover" },
     { label: "Billets", icon: Ticket, path: "/client/tickets" },
     { label: "Profil", icon: User, path: "/client/profile" },
   ];
