@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FloatingInput } from "@/components/ui/FloatingInput";
-import { Calendar, MapPin, ArrowLeft, Minus, Plus, Users, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, ArrowLeft, Minus, Plus, Users, ArrowRight, Share2, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -218,7 +218,6 @@ const EventDetails = () => {
 
           <button 
             onClick={() => {
-              // Build destination: prefer coordinates, fallback to address
               let destination = '';
               if (event.latitude && event.longitude) {
                 destination = `${event.latitude},${event.longitude}`;
@@ -238,8 +237,52 @@ const EventDetails = () => {
               <p className="font-bold">{event.venue}</p>
               <p className="text-sm text-muted-foreground">{event.city}</p>
             </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+            <Navigation className="h-5 w-5 text-primary" />
           </button>
+
+          {/* Mini Map */}
+          {(event.latitude && event.longitude) && (
+            <div 
+              className="w-full h-40 rounded-2xl overflow-hidden cursor-pointer"
+              onClick={() => {
+                const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`;
+                window.open(mapsUrl, '_blank');
+              }}
+            >
+              <iframe
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${event.longitude! - 0.01},${event.latitude! - 0.005},${event.longitude! + 0.01},${event.latitude! + 0.005}&layer=mapnik&marker=${event.latitude},${event.longitude}`}
+                className="w-full h-full border-0 pointer-events-none"
+                title="Localisation"
+              />
+            </div>
+          )}
+
+          {/* Share Button */}
+          <Button
+            variant="outline"
+            className="w-full rounded-2xl h-12"
+            onClick={async () => {
+              const shareData = {
+                title: event.title,
+                text: `${event.title} - ${format(new Date(event.starts_at), "d MMMM yyyy", { locale: fr })} à ${event.venue}`,
+                url: window.location.href,
+              };
+              
+              if (navigator.share) {
+                try {
+                  await navigator.share(shareData);
+                } catch (err) {
+                  // User cancelled or error
+                }
+              } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success("Lien copié !");
+              }
+            }}
+          >
+            <Share2 className="h-5 w-5 mr-2" />
+            Partager l'événement
+          </Button>
         </div>
 
         {/* Description */}
