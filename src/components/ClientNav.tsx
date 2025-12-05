@@ -16,8 +16,8 @@ export function ClientNav() {
 
   return (
     <>
-      <div className="h-20 md:hidden" />
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border z-50 safe-bottom">
+      <div className="h-20" />
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border z-50 safe-bottom">
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => (
             <Link 
