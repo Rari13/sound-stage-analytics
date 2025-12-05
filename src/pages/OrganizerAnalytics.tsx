@@ -8,6 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Users, Heart, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3 } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts";
+
+interface SwipeChartData {
+  name: string;
+  likes: number;
+  dislikes: number;
+  eventId: string;
+}
 
 export default function OrganizerAnalytics() {
   const { user } = useAuth();
@@ -18,6 +26,7 @@ export default function OrganizerAnalytics() {
   const [upgrading, setUpgrading] = useState(false);
   const [selectedCity, setSelectedCity] = useState("");
   const [analysisType, setAnalysisType] = useState<string>("");
+  const [swipeChartData, setSwipeChartData] = useState<SwipeChartData[]>([]);
 
   useEffect(() => {
     if (organizerId) {
@@ -37,12 +46,15 @@ export default function OrganizerAnalytics() {
     // Get organizer's events to fetch swipe stats
     const { data: events } = await supabase
       .from("events")
-      .select("id")
-      .eq("organizer_id", organizerId);
+      .select("id, title")
+      .eq("organizer_id", organizerId)
+      .order("starts_at", { ascending: false })
+      .limit(10);
 
     let likes = 0;
     let totalSwipes = 0;
     let ticketsSold = 0;
+    const chartData: SwipeChartData[] = [];
 
     if (events && events.length > 0) {
       const eventIds = events.map(e => e.id);
@@ -50,12 +62,28 @@ export default function OrganizerAnalytics() {
       // Get swipes for all events
       const { data: swipes } = await supabase
         .from("swipes")
-        .select("direction")
+        .select("direction, event_id")
         .in("event_id", eventIds);
 
       if (swipes) {
         likes = swipes.filter(s => s.direction === 'right').length;
         totalSwipes = swipes.length;
+
+        // Build chart data per event
+        events.forEach(event => {
+          const eventSwipes = swipes.filter(s => s.event_id === event.id);
+          const eventLikes = eventSwipes.filter(s => s.direction === 'right').length;
+          const eventDislikes = eventSwipes.filter(s => s.direction === 'left').length;
+          
+          if (eventLikes > 0 || eventDislikes > 0) {
+            chartData.push({
+              name: event.title.length > 12 ? event.title.substring(0, 12) + '...' : event.title,
+              likes: eventLikes,
+              dislikes: eventDislikes,
+              eventId: event.id
+            });
+          }
+        });
       }
 
       // Get tickets sold
@@ -74,6 +102,7 @@ export default function OrganizerAnalytics() {
       likes,
       conversionRate
     });
+    setSwipeChartData(chartData);
   };
 
   const handleAIAnalysis = async (type: string, city?: string) => {
@@ -156,6 +185,52 @@ export default function OrganizerAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Swipes Chart */}
+      {swipeChartData.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Engagement par événement
+            </CardTitle>
+            <CardDescription>Likes vs Dislikes sur vos événements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={swipeChartData} layout="vertical" margin={{ left: 0, right: 16 }}>
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={80} 
+                    tick={{ fontSize: 10 }} 
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number, name: string) => [
+                      value,
+                      name === 'likes' ? '❤️ Likes' : '❌ Dislikes'
+                    ]}
+                  />
+                  <Legend 
+                    formatter={(value) => value === 'likes' ? 'Likes' : 'Dislikes'}
+                    wrapperStyle={{ fontSize: '12px' }}
+                  />
+                  <Bar dataKey="likes" fill="hsl(var(--success))" radius={[0, 4, 4, 0]} name="likes" />
+                  <Bar dataKey="dislikes" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} name="dislikes" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Insight Psychologique */}
       <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5 overflow-hidden relative">
