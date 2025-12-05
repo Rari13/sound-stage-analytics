@@ -6,6 +6,7 @@ import { X, Heart, MapPin, Calendar, SlidersHorizontal, Loader2, Clock, Euro } f
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -44,7 +45,6 @@ const SwipeCard = ({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Gestion Long Press (600ms)
   const handleTouchStart = () => {
     timerRef.current = setTimeout(() => onLongPressStart(), 600);
   };
@@ -134,28 +134,75 @@ const ClientDiscover = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [maxPrice, setMaxPrice] = useState([50]);
+  
+  // Filtres
+  const [maxPrice, setMaxPrice] = useState([100]);
+  const [cityFilter, setCityFilter] = useState("");
+  const [isFilterActive, setIsFilterActive] = useState(false);
+
   const [quickViewEvent, setQuickViewEvent] = useState<Event | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase
-        .from('events')
-        .select('id, title, subtitle, banner_url, starts_at, city, venue, slug, price_tiers(id, name, price_cents)')
-        .eq('status', 'published')
-        .gte('starts_at', new Date().toISOString())
-        .limit(20);
-      if (data) setEvents(data as Event[]);
-      setLoading(false);
-    };
-    load();
-  }, []);
+    fetchEvents();
+  }, [isFilterActive]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    let query = supabase
+      .from('events')
+      .select('id, title, subtitle, banner_url, starts_at, city, venue, slug, price_tiers(id, name, price_cents)')
+      .eq('status', 'published')
+      .gte('starts_at', new Date().toISOString());
+
+    if (isFilterActive && cityFilter) {
+      query = query.ilike('city', `%${cityFilter}%`);
+    }
+
+    const { data } = await query.limit(20);
+    
+    let filteredData = (data as Event[]) || [];
+    if (isFilterActive && maxPrice[0] < 100) {
+      filteredData = filteredData.filter(e => {
+        if (!e.price_tiers?.length) return true;
+        const minP = Math.min(...e.price_tiers.map(t => t.price_cents)) / 100;
+        return minP <= maxPrice[0];
+      });
+    }
+
+    setEvents(filteredData);
+    setLoading(false);
+  };
 
   const handleSwipe = async (direction: 'left' | 'right', event: Event) => {
     setEvents(prev => prev.filter(e => e.id !== event.id));
     if (direction === 'right') {
       toast.success("Ajouté aux favoris !");
     }
+
+    // Tracking pour l'IA - context null si pas de filtres actifs
+    if (user) {
+      const filtersContext = isFilterActive ? {
+        maxPrice: maxPrice[0] < 100 ? maxPrice[0] : null,
+        city: cityFilter || null
+      } : null;
+
+      await supabase.from('swipes').insert({
+        user_id: user.id,
+        event_id: event.id,
+        direction: direction,
+        filters_context: filtersContext
+      });
+    }
+  };
+
+  const applyFilters = () => {
+    setIsFilterActive(true);
+  };
+
+  const resetFilters = () => {
+    setMaxPrice([100]);
+    setCityFilter("");
+    setIsFilterActive(false);
   };
 
   if (loading) {
@@ -169,26 +216,49 @@ const ClientDiscover = () => {
   return (
     <div className="h-[calc(100vh-80px)] w-full flex flex-col items-center bg-secondary/30 p-4 overflow-hidden relative select-none">
       
-      {/* Quick View Overlay (Si Long Press actif) */}
       {quickViewEvent && <QuickViewModal event={quickViewEvent} />}
 
       {/* Header Filtres */}
       <div className="w-full max-w-md flex justify-between items-center mb-6 z-10 px-2 pt-4">
-        <h1 className="text-3xl font-bold tracking-tighter">Swipe</h1>
+        <h1 className="text-3xl font-bold tracking-tighter">Découvrir</h1>
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="rounded-full h-12 w-12 border-border bg-background shadow-soft hover:shadow-medium">
+            <Button variant="outline" size="icon" className={`rounded-full h-12 w-12 border-border bg-background shadow-soft hover:shadow-medium ${isFilterActive ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
               <SlidersHorizontal className="h-5 w-5" />
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="rounded-b-3xl">
-            <SheetHeader><SheetTitle>Filtres</SheetTitle></SheetHeader>
+            <SheetHeader><SheetTitle>Filtres de recherche</SheetTitle></SheetHeader>
             <div className="py-8 space-y-6">
               <div className="space-y-4">
-                <div className="flex justify-between"><Label>Budget max</Label><span className="font-bold">{maxPrice[0]} €</span></div>
+                <Label>Ville</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Ex: Paris, Lyon..." 
+                    className="pl-9 h-12 bg-secondary border-transparent"
+                    value={cityFilter}
+                    onChange={(e) => setCityFilter(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label>Budget max</Label>
+                  <span className="font-bold">{maxPrice[0] === 100 ? "Illimité" : `${maxPrice[0]} €`}</span>
+                </div>
                 <Slider value={maxPrice} onValueChange={setMaxPrice} max={100} step={5} />
               </div>
-              <Button className="w-full h-12 text-lg font-bold rounded-xl">Appliquer</Button>
+
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={resetFilters}>
+                  Réinitialiser
+                </Button>
+                <Button className="flex-1 h-12 text-lg font-bold rounded-xl" onClick={applyFilters}>
+                  Appliquer
+                </Button>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
@@ -208,9 +278,17 @@ const ClientDiscover = () => {
               />
             ))
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <Loader2 className="h-10 w-10 text-muted-foreground animate-spin mb-4" />
-              <p className="text-muted-foreground font-medium">Recherche de pépites...</p>
+            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4 animate-pulse">
+                <Loader2 className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">C'est tout pour le moment !</h3>
+              <p className="text-muted-foreground font-medium mb-6">
+                Essayez d'élargir vos filtres pour voir plus d'événements.
+              </p>
+              <Button onClick={resetFilters} variant="outline">
+                Voir tout les événements
+              </Button>
             </div>
           )}
         </AnimatePresence>
