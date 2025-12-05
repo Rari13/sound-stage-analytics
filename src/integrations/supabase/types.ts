@@ -488,6 +488,8 @@ export type Database = {
           commission_fixed_eur: number | null
           commission_rate_bps: number | null
           created_at: string | null
+          custom_commission_fixed_cents: number | null
+          custom_commission_rate_bps: number | null
           id: string
           instant_payout_enabled: boolean | null
           name: string
@@ -505,6 +507,8 @@ export type Database = {
           commission_fixed_eur?: number | null
           commission_rate_bps?: number | null
           created_at?: string | null
+          custom_commission_fixed_cents?: number | null
+          custom_commission_rate_bps?: number | null
           id?: string
           instant_payout_enabled?: boolean | null
           name: string
@@ -522,6 +526,8 @@ export type Database = {
           commission_fixed_eur?: number | null
           commission_rate_bps?: number | null
           created_at?: string | null
+          custom_commission_fixed_cents?: number | null
+          custom_commission_rate_bps?: number | null
           id?: string
           instant_payout_enabled?: boolean | null
           name?: string
