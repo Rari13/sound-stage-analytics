@@ -83,7 +83,99 @@ serve(async (req) => {
     let userPrompt = "";
 
     // Get data based on type
-    if (type === "market-analysis" && city) {
+    if (type === "demand-supply-analysis") {
+      // NEW: Analyze swipes demand vs organizer supply
+      console.log("Starting demand-supply analysis for organizer:", organizerId);
+
+      // Get organizer's events
+      const { data: organizerEvents } = await supabase
+        .from("events")
+        .select("id, title, city, music_genres, event_type, starts_at, price_tiers(price_cents)")
+        .eq("organizer_id", organizerId)
+        .order("starts_at", { ascending: false })
+        .limit(20);
+
+      // Get all swipes for organizer's events
+      const eventIds = organizerEvents?.map(e => e.id) || [];
+      
+      let swipesData: any[] = [];
+      if (eventIds.length > 0) {
+        const { data: swipes } = await supabase
+          .from("swipes")
+          .select("event_id, direction, filters_context, created_at")
+          .in("event_id", eventIds);
+        swipesData = swipes || [];
+      }
+
+      // Separate qualified swipes (with filters) from organic swipes
+      const qualifiedSwipes = swipesData.filter(s => s.filters_context !== null);
+      const organicSwipes = swipesData.filter(s => s.filters_context === null);
+
+      // Aggregate filter contexts to understand demand
+      const demandPatterns: { cities: Record<string, number>; maxPrices: number[] } = {
+        cities: {},
+        maxPrices: []
+      };
+
+      qualifiedSwipes.forEach(s => {
+        if (s.filters_context?.city) {
+          demandPatterns.cities[s.filters_context.city] = (demandPatterns.cities[s.filters_context.city] || 0) + 1;
+        }
+        if (s.filters_context?.maxPrice) {
+          demandPatterns.maxPrices.push(s.filters_context.maxPrice);
+        }
+      });
+
+      // Calculate like/dislike ratios
+      const likeCount = swipesData.filter(s => s.direction === 'right').length;
+      const dislikeCount = swipesData.filter(s => s.direction === 'left').length;
+      const likeRatio = swipesData.length > 0 ? (likeCount / swipesData.length * 100).toFixed(1) : 0;
+
+      // Get historical events for more context
+      const { data: historicalEvents } = await supabase
+        .from("historical_events")
+        .select("title, city, genre, tickets_sold, revenue_cents, date")
+        .eq("organizer_id", organizerId)
+        .order("date", { ascending: false })
+        .limit(20);
+
+      systemPrompt = `Tu es un expert en analyse de marché événementiel avec une spécialisation en psychologie comportementale. Tu analyses l'écart entre l'offre (les événements créés par l'organisateur) et la demande réelle (basée sur les swipes des utilisateurs).
+
+IMPORTANT: Les "swipes qualifiés" sont les plus précieux car l'utilisateur avait défini des filtres de recherche, ce qui montre une intention forte. Les swipes organiques sont moins informatifs car sans contexte de recherche.`;
+
+      userPrompt = `Analyse l'écart offre/demande pour cet organisateur:
+
+## OFFRE (événements de l'organisateur)
+${JSON.stringify(organizerEvents?.map(e => ({
+  title: e.title,
+  city: e.city,
+  genres: e.music_genres,
+  type: e.event_type,
+  prix_min: e.price_tiers?.length ? Math.min(...e.price_tiers.map((p: any) => p.price_cents)) / 100 : 0
+})) || [], null, 2)}
+
+## DEMANDE (swipes des utilisateurs)
+- Total swipes: ${swipesData.length}
+- Likes: ${likeCount} (${likeRatio}%)
+- Dislikes: ${dislikeCount}
+- Swipes qualifiés (avec filtres): ${qualifiedSwipes.length}
+- Swipes organiques: ${organicSwipes.length}
+
+### Patterns de recherche qualifiée:
+- Villes recherchées: ${JSON.stringify(demandPatterns.cities)}
+- Budgets max recherchés: ${demandPatterns.maxPrices.length > 0 ? `Moyenne: ${(demandPatterns.maxPrices.reduce((a, b) => a + b, 0) / demandPatterns.maxPrices.length).toFixed(0)}€, Min: ${Math.min(...demandPatterns.maxPrices)}€, Max: ${Math.max(...demandPatterns.maxPrices)}€` : 'Non renseigné'}
+
+## HISTORIQUE (événements passés)
+${JSON.stringify(historicalEvents?.slice(0, 10) || [], null, 2)}
+
+Fournis une analyse structurée:
+1. **Taux d'engagement** - Interprète le ratio likes/dislikes
+2. **Écart géographique** - Les villes où tu proposes vs celles recherchées
+3. **Sensibilité au prix** - Tes tarifs vs les budgets des utilisateurs
+4. **Recommandations stratégiques** - 3 actions concrètes pour mieux aligner offre/demande
+5. **Opportunités manquées** - Types d'événements que tu devrais envisager`;
+
+    } else if (type === "market-analysis" && city) {
       // Analyze market potential for a city
       const { data: clientProfiles } = await supabase
         .from("client_profiles")
@@ -91,19 +183,29 @@ serve(async (req) => {
         .not("latitude", "is", null)
         .not("longitude", "is", null);
 
-      // Calculate distance and filter clients within 50km of the city
       const { data: cityEvents } = await supabase
         .from("events")
         .select("city, music_genres, event_type, latitude, longitude")
         .eq("city", city)
         .eq("status", "published");
 
-      systemPrompt = `Tu es un expert en analyse de marché événementiel. Analyse les données démographiques et les préférences des utilisateurs pour recommander les types d'événements qui auraient du succès dans une ville donnée.`;
+      // Get swipes in this city for demand analysis
+      const { data: citySwipes } = await supabase
+        .from("swipes")
+        .select("direction, filters_context")
+        .not("filters_context", "is", null);
+
+      const cityDemand = citySwipes?.filter(s => 
+        s.filters_context?.city?.toLowerCase().includes(city.toLowerCase())
+      ) || [];
+
+      systemPrompt = `Tu es un expert en analyse de marché événementiel. Analyse les données démographiques, les préférences des utilisateurs et la demande réelle (swipes) pour recommander les types d'événements qui auraient du succès dans une ville donnée.`;
       
       userPrompt = `Analyse le marché pour la ville de ${city}.
       
 Données clients dans un rayon de 50km: ${JSON.stringify(clientProfiles?.slice(0, 50) || [])}
 Événements passés dans cette ville: ${JSON.stringify(cityEvents || [])}
+Demande qualifiée (swipes avec filtre ville ${city}): ${cityDemand.length} recherches
 
 Fournis:
 1. Les genres musicaux/mouvements artistiques les plus demandés
@@ -130,7 +232,16 @@ Fournis:
         .select("created_at, amount_total_cents, status")
         .eq("event_id", eventId);
 
-      systemPrompt = `Tu es un expert en analyse d'événements. Analyse les performances de vente et fournis des insights actionnables.`;
+      // Get swipes for this event
+      const { data: eventSwipes } = await supabase
+        .from("swipes")
+        .select("direction, filters_context, created_at")
+        .eq("event_id", eventId);
+
+      const likes = eventSwipes?.filter(s => s.direction === 'right').length || 0;
+      const dislikes = eventSwipes?.filter(s => s.direction === 'left').length || 0;
+
+      systemPrompt = `Tu es un expert en analyse d'événements. Analyse les performances de vente et les interactions utilisateurs pour fournir des insights actionnables.`;
       
       userPrompt = `Analyse cet événement: ${event?.title}
       
@@ -140,12 +251,17 @@ Données de vente:
 - Date de début: ${event?.starts_at}
 - Capacité: ${event?.capacity}
 
+Données d'engagement (swipes):
+- Likes: ${likes}
+- Dislikes: ${dislikes}
+- Ratio d'intérêt: ${likes + dislikes > 0 ? ((likes / (likes + dislikes)) * 100).toFixed(1) : 0}%
+
 Fournis:
 1. Taux de conversion et vitesse de vente
-2. Prédiction du nombre final de billets vendus
-3. Recommandations pour améliorer les ventes
-4. Meilleur moment pour lancer des promotions
-5. Analyse du comportement d'achat`;
+2. Analyse de l'engagement vs conversions
+3. Prédiction du nombre final de billets vendus
+4. Recommandations pour améliorer les ventes
+5. Meilleur moment pour lancer des promotions`;
 
     } else if (type === "revenue-prediction" && eventId) {
       // Predict revenue
@@ -196,18 +312,34 @@ Fournis:
         .order("starts_at", { ascending: false })
         .limit(10);
 
+      // Get swipe stats for all organizer events
+      const eventIds = events?.map(e => e.id) || [];
+      let totalLikes = 0;
+      let totalDislikes = 0;
+      
+      if (eventIds.length > 0) {
+        const { data: allSwipes } = await supabase
+          .from("swipes")
+          .select("direction")
+          .in("event_id", eventIds);
+        
+        totalLikes = allSwipes?.filter(s => s.direction === 'right').length || 0;
+        totalDislikes = allSwipes?.filter(s => s.direction === 'left').length || 0;
+      }
+
       systemPrompt = `Tu es un consultant expert en gestion d'événements. Analyse les performances globales de l'organisateur et fournis des recommandations stratégiques.`;
       
       userPrompt = `Analyse les performances de l'organisateur:
       
 Événements récents: ${JSON.stringify(events || [])}
+Engagement global: ${totalLikes} likes, ${totalDislikes} dislikes (ratio: ${totalLikes + totalDislikes > 0 ? ((totalLikes / (totalLikes + totalDislikes)) * 100).toFixed(1) : 0}%)
 
 Fournis:
 1. Tendances de performance (événements qui marchent le mieux)
-2. Recommandations pour améliorer les ventes futures
-3. Insights sur la saisonnalité
-4. Suggestions de nouveaux types d'événements à créer
-5. Benchmark par rapport aux standards du marché`;
+2. Analyse de l'engagement vs ventes
+3. Recommandations pour améliorer les ventes futures
+4. Insights sur la saisonnalité
+5. Suggestions de nouveaux types d'événements à créer`;
     }
 
     // Call Lovable AI
