@@ -25,6 +25,7 @@ import EventDetails from "./pages/EventDetails";
 import OrganizerAnalytics from "./pages/OrganizerAnalytics";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
+import GroupPayJoin from "./pages/GroupPayJoin";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -147,6 +148,7 @@ const App = () => (
       />
       
       <Route path="/events/:slug" element={<EventDetails />} />
+      <Route path="/group-pay/:shareCode" element={<GroupPayJoin />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
       <Route path="*" element={<NotFound />} />
