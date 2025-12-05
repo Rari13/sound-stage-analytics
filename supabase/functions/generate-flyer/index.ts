@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, organizerId } = await req.json();
+    const { prompt, organizerId, logoBase64 } = await req.json();
     
     if (!prompt) {
       throw new Error("Le prompt est vide.");
@@ -24,8 +24,49 @@ serve(async (req) => {
     }
 
     console.log("Generating flyer with prompt:", prompt);
+    console.log("Has logo:", !!logoBase64);
 
-    // Use Lovable AI Gateway for image generation
+    // Build the enhanced prompt for professional flyer generation
+    const systemPrompt = `You are a professional graphic designer creating event flyers. 
+Create a visually stunning, modern event flyer with:
+- High quality, professional graphic design
+- Clear visual hierarchy
+- Space at the top for event title (leave it blank, just the design)
+- Vibrant colors and modern aesthetics
+- No text or typography, just the visual design/background
+${logoBase64 ? '- Incorporate the provided logo elegantly into the design, place it prominently but tastefully' : ''}`;
+
+    let messages: any[];
+    
+    if (logoBase64) {
+      // If logo is provided, use multimodal input to incorporate it
+      messages = [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `${systemPrompt}\n\nCreate this flyer design: ${prompt}\n\nIMPORTANT: Incorporate the logo image I'm providing into the flyer design. Place it prominently in a corner or center, ensuring it's visible and well-integrated with the overall design.`
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: logoBase64
+              }
+            }
+          ]
+        }
+      ];
+    } else {
+      messages = [
+        {
+          role: "user",
+          content: `${systemPrompt}\n\nCreate this flyer design: ${prompt}`
+        }
+      ];
+    }
+
+    // Use Lovable AI Gateway with Nano Banana for image generation
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -34,12 +75,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: `Create a modern, artistic event flyer. High quality, professional graphic design. Minimalist typography space at the top for event title. Context: ${prompt}`
-          }
-        ],
+        messages,
         modalities: ["image", "text"]
       }),
     });
