@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Users, Heart, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin } from "lucide-react";
+import { Brain, Users, Heart, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3 } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { toast } from "sonner";
 
@@ -14,21 +14,67 @@ export default function OrganizerAnalytics() {
   const { isPremium, organizerId, upgradeToPremium } = useSubscription();
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState("");
-  const [audienceStats, setAudienceStats] = useState({ followers: 0 });
+  const [audienceStats, setAudienceStats] = useState({ followers: 0, likes: 0, conversionRate: 0 });
   const [upgrading, setUpgrading] = useState(false);
   const [selectedCity, setSelectedCity] = useState("");
+  const [analysisType, setAnalysisType] = useState<string>("");
 
   useEffect(() => {
     if (organizerId) {
-      supabase
-        .from("follows")
-        .select("*", { count: "exact", head: true })
-        .eq("organizer_id", organizerId)
-        .then(({ count }) =>
-          setAudienceStats((prev) => ({ ...prev, followers: count || 0 }))
-        );
+      fetchStats();
     }
   }, [organizerId]);
+
+  const fetchStats = async () => {
+    if (!organizerId) return;
+
+    // Get followers count
+    const { count: followersCount } = await supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("organizer_id", organizerId);
+
+    // Get organizer's events to fetch swipe stats
+    const { data: events } = await supabase
+      .from("events")
+      .select("id")
+      .eq("organizer_id", organizerId);
+
+    let likes = 0;
+    let totalSwipes = 0;
+    let ticketsSold = 0;
+
+    if (events && events.length > 0) {
+      const eventIds = events.map(e => e.id);
+      
+      // Get swipes for all events
+      const { data: swipes } = await supabase
+        .from("swipes")
+        .select("direction")
+        .in("event_id", eventIds);
+
+      if (swipes) {
+        likes = swipes.filter(s => s.direction === 'right').length;
+        totalSwipes = swipes.length;
+      }
+
+      // Get tickets sold
+      const { count: ticketsCount } = await supabase
+        .from("tickets")
+        .select("*", { count: "exact", head: true })
+        .in("event_id", eventIds);
+      
+      ticketsSold = ticketsCount || 0;
+    }
+
+    const conversionRate = likes > 0 ? Math.round((ticketsSold / likes) * 100) : 0;
+
+    setAudienceStats({
+      followers: followersCount || 0,
+      likes,
+      conversionRate
+    });
+  };
 
   const handleAIAnalysis = async (type: string, city?: string) => {
     if (!isPremium) {
@@ -36,6 +82,7 @@ export default function OrganizerAnalytics() {
       return;
     }
     setAiLoading(true);
+    setAnalysisType(type);
     try {
       const { data, error } = await supabase.functions.invoke("ai-analytics", {
         body: { type, organizerId, city },
@@ -93,7 +140,7 @@ export default function OrganizerAnalytics() {
         <Card className="border-pink-500/20 bg-pink-500/5">
           <CardContent className="p-4 text-center">
             <Heart className="h-5 w-5 text-pink-500 mx-auto mb-1" />
-            <div className="text-2xl font-bold">--</div>
+            <div className="text-2xl font-bold">{audienceStats.likes}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Likes
             </div>
@@ -102,7 +149,7 @@ export default function OrganizerAnalytics() {
         <Card className="border-green-500/20 bg-green-500/5">
           <CardContent className="p-4 text-center">
             <MousePointerClick className="h-5 w-5 text-green-500 mx-auto mb-1" />
-            <div className="text-2xl font-bold">--%</div>
+            <div className="text-2xl font-bold">{audienceStats.conversionRate}%</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Conv.
             </div>
@@ -125,26 +172,47 @@ export default function OrganizerAnalytics() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 bg-background/60 backdrop-blur rounded-xl border text-sm leading-relaxed min-h-[80px]">
+          <div className="p-4 bg-background/60 backdrop-blur rounded-xl border text-sm leading-relaxed min-h-[80px] whitespace-pre-wrap">
             {aiAnalysis || (
               <span className="text-muted-foreground">
-                Cliquez sur le bouton pour analyser le comportement de vos
+                Cliquez sur un bouton pour analyser le comportement de vos
                 clients et obtenir des conseils stratégiques.
               </span>
             )}
           </div>
-          <Button
-            onClick={() => handleAIAnalysis("general-insights")}
-            disabled={aiLoading || !isPremium}
-            className="w-full"
-          >
-            {aiLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <TrendingUp className="mr-2 h-4 w-4" />
-            )}
-            {isPremium ? "Générer l'analyse IA" : "Premium requis"}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => handleAIAnalysis("general-insights")}
+              disabled={aiLoading || !isPremium}
+              variant={analysisType === "general-insights" ? "default" : "outline"}
+              className="w-full"
+            >
+              {aiLoading && analysisType === "general-insights" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <TrendingUp className="mr-2 h-4 w-4" />
+              )}
+              Performance
+            </Button>
+            <Button
+              onClick={() => handleAIAnalysis("demand-supply-analysis")}
+              disabled={aiLoading || !isPremium}
+              variant={analysisType === "demand-supply-analysis" ? "default" : "outline"}
+              className="w-full"
+            >
+              {aiLoading && analysisType === "demand-supply-analysis" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <BarChart3 className="mr-2 h-4 w-4" />
+              )}
+              Offre vs Demande
+            </Button>
+          </div>
+          {!isPremium && (
+            <p className="text-xs text-center text-muted-foreground">
+              Premium requis pour les analyses IA
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -185,7 +253,7 @@ export default function OrganizerAnalytics() {
                   onClick={() => handleAIAnalysis("market-analysis", selectedCity)}
                   disabled={aiLoading || !selectedCity}
                 >
-                  {aiLoading ? (
+                  {aiLoading && analysisType === "market-analysis" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     "Analyser"
