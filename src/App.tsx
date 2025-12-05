@@ -23,6 +23,7 @@ import EventCreate from "./pages/EventCreate";
 import EventEdit from "./pages/EventEdit";
 import EventDetails from "./pages/EventDetails";
 import OrganizerAnalytics from "./pages/OrganizerAnalytics";
+import OrganizerSubscription from "./pages/OrganizerSubscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
 import GroupPayJoin from "./pages/GroupPayJoin";
@@ -127,6 +128,16 @@ const App = () => (
         element={
           <ProtectedRoute requireRole="organizer">
             <OrganizerProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/subscription" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerLayout>
+              <OrganizerSubscription />
+            </OrganizerLayout>
           </ProtectedRoute>
         } 
       />
