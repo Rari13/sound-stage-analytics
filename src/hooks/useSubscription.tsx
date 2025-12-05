@@ -28,7 +28,7 @@ export const useSubscription = () => {
           .from("organizers")
           .select("id")
           .eq("owner_user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!orgData) {
           setLoading(false);
@@ -43,7 +43,7 @@ export const useSubscription = () => {
           .select("*")
           .eq("organizer_id", orgData.id)
           .eq("status", "active")
-          .single();
+          .maybeSingle();
 
         setSubscription(subData as Subscription);
       } catch (error) {
@@ -59,7 +59,7 @@ export const useSubscription = () => {
   const isPremium = subscription?.plan_type === "premium" && subscription?.status === "active";
 
   const upgradeToPremium = async () => {
-    if (!organizerId) return { error: "Organizer not found" };
+    if (!organizerId) return { error: "Organizer not found", success: false };
 
     try {
       // Check if subscription exists
@@ -67,7 +67,7 @@ export const useSubscription = () => {
         .from("organizer_subscriptions")
         .select("id")
         .eq("organizer_id", organizerId)
-        .single();
+        .maybeSingle();
 
       if (existingSub) {
         // Update existing subscription
@@ -76,7 +76,7 @@ export const useSubscription = () => {
           .update({
             plan_type: "premium",
             status: "active",
-            monthly_price_cents: 10000, // 100€
+            monthly_price_cents: 15000, // 150€ Sound Pro + IA
             started_at: new Date().toISOString(),
           })
           .eq("id", existingSub.id);
@@ -90,7 +90,7 @@ export const useSubscription = () => {
             organizer_id: organizerId,
             plan_type: "premium",
             status: "active",
-            monthly_price_cents: 10000,
+            monthly_price_cents: 15000,
           });
 
         if (error) throw error;
@@ -102,14 +102,14 @@ export const useSubscription = () => {
         .select("*")
         .eq("organizer_id", organizerId)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       setSubscription(subData as Subscription);
 
       return { success: true };
     } catch (error) {
       console.error("Error upgrading subscription:", error);
-      return { error: "Failed to upgrade subscription" };
+      return { error: "Failed to upgrade subscription", success: false };
     }
   };
 

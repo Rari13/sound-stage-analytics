@@ -8,7 +8,14 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  console.log(`[CREATE-CHECKOUT] ${step}`, details || "");
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
+// Pricing Strategy Configuration
+const PRICING_STRATEGY = {
+  starter: { percent: 0.05, fixed: 99 },  // 5% + 0.99€
+  pro: { percent: 0, fixed: 99 },          // 0% + 0.99€
 };
 
 serve(async (req) => {
@@ -19,7 +26,6 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Use SERVICE_ROLE_KEY to bypass RLS when creating orders
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -45,7 +51,6 @@ serve(async (req) => {
       throw new Error("eventId and items array required");
     }
 
-    // Use provided email if user not authenticated
     if (!customerEmail && providedEmail) {
       customerEmail = providedEmail;
     }
@@ -56,7 +61,7 @@ serve(async (req) => {
 
     logStep("Request data", { eventId, items, customerEmail });
 
-    // Fetch event
+    // Fetch event with organizer
     const { data: event, error: eventError } = await supabaseClient
       .from("events")
       .select("id, title, slug, organizer_id, banner_url")
@@ -66,10 +71,10 @@ serve(async (req) => {
     if (eventError || !event) throw new Error("Event not found");
     logStep("Event loaded", { eventId: event.id, title: event.title });
 
-    // Fetch organizer with Connect account and fees
+    // Fetch organizer with Connect account and custom fees
     const { data: organizer, error: orgError } = await supabaseClient
       .from("organizers")
-      .select("id, stripe_account_id, commission_rate_bps, commission_fixed_eur")
+      .select("id, stripe_account_id, custom_commission_rate_bps, custom_commission_fixed_cents")
       .eq("id", event.organizer_id)
       .single();
 
@@ -78,12 +83,36 @@ serve(async (req) => {
       throw new Error("Organizer has not configured Stripe Connect");
     }
 
-    logStep("Organizer loaded", { 
-      organizerId: organizer.id, 
-      hasStripeAccount: !!organizer.stripe_account_id,
-      commissionRateBps: organizer.commission_rate_bps,
-      commissionFixedEur: organizer.commission_fixed_eur
-    });
+    // Fetch organizer subscription
+    const { data: subscriptionData } = await supabaseClient
+      .from("organizer_subscriptions")
+      .select("plan_type, status")
+      .eq("organizer_id", organizer.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    const isPremium = subscriptionData?.plan_type === 'premium';
+    logStep("Subscription status", { isPremium });
+
+    // PRICING LOGIC - Determine fees
+    let feesConfig = PRICING_STRATEGY.starter; // Default: Starter (5% + 0.99€)
+    let pricingSource = 'starter';
+
+    // Priority 1: Custom negotiated rates
+    if (organizer.custom_commission_rate_bps !== null && organizer.custom_commission_fixed_cents !== null) {
+      feesConfig = {
+        percent: organizer.custom_commission_rate_bps / 10000,
+        fixed: organizer.custom_commission_fixed_cents
+      };
+      pricingSource = 'custom_negotiated';
+    } 
+    // Priority 2: Pro plan (0% + 0.99€)
+    else if (isPremium) {
+      feesConfig = PRICING_STRATEGY.pro;
+      pricingSource = 'pro';
+    }
+
+    logStep("Fees configuration", { feesConfig, pricingSource });
 
     // Fetch requested price tiers
     const tierIds = items.map((item: any) => item.tierId);
@@ -96,8 +125,9 @@ serve(async (req) => {
     if (tiersError || !tiers) throw new Error("Price tiers not found");
     logStep("Tiers loaded", { count: tiers.length });
 
-    // Check stock and calculate totals
+    // Calculate totals with dynamic fees
     let subtotalCents = 0;
+    let totalApplicationFee = 0;
     let totalQty = 0;
     const lineItems: any[] = [];
 
@@ -108,12 +138,18 @@ serve(async (req) => {
       const qty = parseInt(item.qty);
       if (isNaN(qty) || qty < 1) throw new Error(`Invalid quantity for tier ${tier.name}`);
 
-      // Check stock availability (simplified - in production check qty_sold)
       if (tier.quota && qty > tier.quota) {
         throw new Error(`Insufficient stock for ${tier.name}. Only ${tier.quota} available.`);
       }
 
+      // Calculate fee per ticket based on pricing model
+      const feePerTicket = Math.round((tier.price_cents * feesConfig.percent) + feesConfig.fixed);
+      
+      // Price with fee = base price + Sound fee
+      const priceWithFee = tier.price_cents + feePerTicket;
+
       subtotalCents += tier.price_cents * qty;
+      totalApplicationFee += feePerTicket * qty;
       totalQty += qty;
 
       lineItems.push({
@@ -121,26 +157,16 @@ serve(async (req) => {
           currency: "eur",
           product_data: {
             name: `${event.title} - ${tier.name}`,
+            description: `Billet : ${(tier.price_cents/100).toFixed(2)}€ + Frais de service`,
             images: event.banner_url ? [event.banner_url] : [],
           },
-          unit_amount: tier.price_cents,
+          unit_amount: priceWithFee,
         },
         quantity: qty,
       });
     }
 
-    logStep("Stock checked and totals calculated", { subtotalCents, totalQty });
-
-    // Calculate application fee
-    const feePct = (organizer.commission_rate_bps || 110) / 100; // Convert bps to percentage
-    const feeFixedCentsPerTicket = Math.round((organizer.commission_fixed_eur || 0) * 100);
-    const applicationFeeAmount = Math.floor(subtotalCents * (feePct / 100)) + (feeFixedCentsPerTicket * totalQty);
-
-    logStep("Application fee calculated", { 
-      feePct, 
-      feeFixedCentsPerTicket, 
-      applicationFeeAmount 
-    });
+    logStep("Totals calculated", { subtotalCents, totalApplicationFee, totalQty, pricingSource });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -150,32 +176,39 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || Deno.env.get("APP_URL") || "http://localhost:8080";
 
     // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer_email: customerEmail,
       line_items: lineItems,
       mode: "payment",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/payment-cancelled`,
-      payment_intent_data: {
-        on_behalf_of: organizer.stripe_account_id,
-        transfer_data: {
-          destination: organizer.stripe_account_id,
-        },
-        application_fee_amount: applicationFeeAmount,
-      },
       metadata: {
         event_id: eventId,
         organizer_id: organizer.id,
         user_id: userId || "guest",
+        pricing_model: pricingSource,
+        subtotal_cents: subtotalCents.toString(),
+        application_fee_cents: totalApplicationFee.toString(),
       },
-    });
+    };
 
+    // Add transfer data for paid tickets
+    if (subtotalCents > 0) {
+      sessionConfig.payment_intent_data = {
+        on_behalf_of: organizer.stripe_account_id,
+        transfer_data: {
+          destination: organizer.stripe_account_id,
+        },
+        application_fee_amount: totalApplicationFee,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     logStep("Stripe session created", { sessionId: session.id });
 
     // Get or create user for guest checkouts
     let finalUserId = userId;
     if (!userId) {
-      // Create a guest user account
       const { data: guestUser, error: guestError } = await supabaseClient.auth.admin.createUser({
         email: customerEmail,
         password: crypto.randomUUID(),
@@ -204,8 +237,8 @@ serve(async (req) => {
         user_id: finalUserId,
         stripe_checkout_session_id: session.id,
         status: "pending",
-        amount_total_cents: subtotalCents,
-        application_fee_cents: applicationFeeAmount,
+        amount_total_cents: subtotalCents + totalApplicationFee,
+        application_fee_cents: totalApplicationFee,
         currency: "EUR",
         short_code: shortCode,
       })
@@ -217,7 +250,7 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
     
-    logStep("Order created", { orderId: order.id, shortCode });
+    logStep("Order created", { orderId: order.id, shortCode, pricingSource });
 
     return new Response(
       JSON.stringify({ url: session.url }),
