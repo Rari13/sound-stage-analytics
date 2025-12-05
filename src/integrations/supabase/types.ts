@@ -212,6 +212,97 @@ export type Database = {
           },
         ]
       }
+      group_order_participants: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          email: string
+          group_order_id: string
+          id: string
+          paid_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          email: string
+          group_order_id: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          email?: string
+          group_order_id?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_order_participants_group_order_id_fkey"
+            columns: ["group_order_id"]
+            isOneToOne: false
+            referencedRelation: "group_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_orders: {
+        Row: {
+          created_at: string | null
+          creator_user_id: string
+          event_id: string
+          expires_at: string
+          id: string
+          price_per_ticket_cents: number
+          share_code: string
+          status: string
+          total_tickets: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_user_id: string
+          event_id: string
+          expires_at?: string
+          id?: string
+          price_per_ticket_cents: number
+          share_code?: string
+          status?: string
+          total_tickets: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_user_id?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+          price_per_ticket_cents?: number
+          share_code?: string
+          status?: string
+          total_tickets?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historical_events: {
         Row: {
           city: string | null

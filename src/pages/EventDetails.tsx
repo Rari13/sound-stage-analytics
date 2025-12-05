@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { GroupPayModal } from "@/components/GroupPayModal";
 
 interface Event {
   id: string;
@@ -43,6 +44,7 @@ const EventDetails = () => {
   const [guestEmailDialogOpen, setGuestEmailDialogOpen] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [groupPayModalOpen, setGroupPayModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -130,7 +132,12 @@ const EventDetails = () => {
     if (totalTickets === 0) return toast.error("Sélectionnez un billet");
     
     if (mode === 'split') {
-      toast.info("Création du groupe...", { description: "Fonctionnalité bientôt disponible" });
+      if (!user) {
+        toast.error("Connectez-vous pour utiliser Group Pay");
+        navigate(`/login?redirect=/events/${slug}`);
+        return;
+      }
+      setGroupPayModalOpen(true);
       return;
     }
 
@@ -140,6 +147,10 @@ const EventDetails = () => {
     }
     processCheckout(user?.email || null);
   };
+
+  // Get first selected tier for Group Pay
+  const selectedTierId = Object.entries(quantities).find(([_, qty]) => qty > 0)?.[0];
+  const selectedTier = priceTiers.find(t => t.id === selectedTierId);
 
   const handleGuestCheckout = () => {
     if (!validateEmail(guestEmail)) return;
@@ -321,6 +332,19 @@ const EventDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Group Pay Modal */}
+      {event && selectedTier && (
+        <GroupPayModal
+          open={groupPayModalOpen}
+          onOpenChange={setGroupPayModalOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+          priceTierId={selectedTier.id}
+          pricePerTicket={selectedTier.price_cents}
+          totalTickets={totalTickets}
+        />
+      )}
     </div>
   );
 };
