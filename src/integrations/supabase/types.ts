@@ -766,6 +766,41 @@ export type Database = {
           },
         ]
       }
+      swipes: {
+        Row: {
+          created_at: string | null
+          direction: string
+          event_id: string
+          filters_context: Json | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          direction: string
+          event_id: string
+          filters_context?: Json | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          direction?: string
+          event_id?: string
+          filters_context?: Json | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swipes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           event_id: string
