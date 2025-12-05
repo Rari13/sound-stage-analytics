@@ -30,5 +30,6 @@ verify_jwt = false
 [functions.generate-flyer]
 verify_jwt = true
 
-[functions.bridge-webhook]
-verify_jwt = false
+# [functions.bridge-webhook]
+# verify_jwt = false
+# DISABLED - En attente de configuration du secret BRIDGE_WEBHOOK_SECRET
