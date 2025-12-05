@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Music, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Music, Loader2, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ const ClientProfile = () => {
   const [geolocating, setGeolocating] = useState(false);
   
   const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [maxDistance, setMaxDistance] = useState(50);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
@@ -35,13 +36,14 @@ const ClientProfile = () => {
   const fetchProfile = async () => {
     const { data, error } = await supabase
       .from('client_profiles')
-      .select('city, max_distance_km, preferred_genres')
+      .select('city, max_distance_km, preferred_genres, address')
       .eq('user_id', user?.id)
       .maybeSingle();
 
     if (!error && data) {
       const profileData = data as any;
       setCity(profileData.city || "");
+      setAddress(profileData.address || "");
       setMaxDistance(profileData.max_distance_km || 50);
       setSelectedGenres(profileData.preferred_genres || []);
     }
@@ -72,7 +74,6 @@ const ClientProfile = () => {
       async (position) => {
         const { latitude, longitude } = position.coords;
         
-        // Reverse geocoding using OpenStreetMap Nominatim
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=fr`
@@ -84,7 +85,6 @@ const ClientProfile = () => {
           if (cityName) {
             setCity(cityName);
             
-            // Save coordinates to database
             await supabase
               .from('client_profiles')
               .update({
@@ -97,12 +97,6 @@ const ClientProfile = () => {
             toast({
               title: "Position détectée",
               description: `Votre ville : ${cityName}`,
-            });
-          } else {
-            toast({
-              title: "Erreur",
-              description: "Impossible de déterminer votre ville",
-              variant: "destructive",
             });
           }
         } catch (error) {
@@ -138,6 +132,7 @@ const ClientProfile = () => {
       .from('client_profiles')
       .update({
         city,
+        address,
         max_distance_km: maxDistance,
         preferred_genres: selectedGenres
       } as any)
@@ -146,13 +141,13 @@ const ClientProfile = () => {
     if (error) {
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder les préférences",
+        description: "Impossible de sauvegarder. Vérifiez votre connexion.",
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Préférences sauvegardées",
-        description: "Vos préférences ont été mises à jour",
+        title: "Profil mis à jour",
+        description: "Vos préférences et votre adresse de sécurité sont enregistrées.",
       });
       navigate('/client/home');
     }
@@ -162,47 +157,57 @@ const ClientProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-3 md:p-8">
-      <div className="container mx-auto max-w-2xl space-y-6 md:space-y-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-
-        <div className="space-y-3 md:space-y-4">
-          <h1 className="text-2xl md:text-4xl font-bold">Mon Profil</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Configurez vos préférences musicales
-          </p>
+    <div className="min-h-screen p-4 pb-24 md:p-8">
+      <div className="container mx-auto max-w-2xl space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Mon Profil</h1>
         </div>
 
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Mes préférences</h1>
-          <p className="text-muted-foreground">
-            Personnalisez votre feed pour découvrir les événements qui vous correspondent
-          </p>
-        </div>
-
-        <Card>
+        {/* Section Sécurité */}
+        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Localisation
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+              <Home className="h-5 w-5" />
+              Retour en sécurité
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="city">Ville</Label>
+              <Label htmlFor="address">Adresse de domicile</Label>
+              <Input
+                id="address"
+                placeholder="10 Rue de la Paix, Paris"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                Utilisée uniquement par le bouton "Rentrer à la maison" du Safety Widget.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Localisation */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Zone de recherche
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="city">Ville principale</Label>
               <div className="flex gap-2">
                 <Input
                   id="city"
@@ -224,34 +229,31 @@ const ClientProfile = () => {
                   )}
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Nous vous suggérerons des événements dans cette ville et ses environs. 
-                Cliquez sur l'icône pour détecter votre position automatiquement.
-              </p>
             </div>
-            <div>
-              <Label htmlFor="distance">
-                Distance maximale: {maxDistance} km
-              </Label>
+            <div className="space-y-4 pt-2">
+              <div className="flex justify-between">
+                <Label>Rayon de recherche</Label>
+                <span className="text-sm font-bold">{maxDistance} km</span>
+              </div>
               <input
                 type="range"
-                id="distance"
-                min="10"
-                max="200"
-                step="10"
+                min="5"
+                max="100"
+                step="5"
                 value={maxDistance}
                 onChange={(e) => setMaxDistance(Number(e.target.value))}
-                className="w-full"
+                className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
               />
             </div>
           </CardContent>
         </Card>
 
+        {/* Section Genres */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Music className="h-5 w-5" />
-              Genres musicaux préférés
+              Goûts musicaux
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -262,26 +264,17 @@ const ClientProfile = () => {
                   variant={selectedGenres.includes(genre) ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleGenre(genre)}
+                  className="rounded-full"
                 >
                   {genre}
                 </Button>
               ))}
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
-              {selectedGenres.length === 0
-                ? "Sélectionnez vos genres préférés pour personnaliser votre feed"
-                : `${selectedGenres.length} genre(s) sélectionné(s)`}
-            </p>
           </CardContent>
         </Card>
 
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full"
-          size="lg"
-        >
-          {saving ? "Sauvegarde..." : "Sauvegarder mes préférences"}
+        <Button onClick={handleSave} disabled={saving} className="w-full h-12 text-lg rounded-xl shadow-lg" size="lg">
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enregistrer"}
         </Button>
       </div>
     </div>

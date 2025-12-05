@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       client_profiles: {
         Row: {
+          address: string | null
           age_group: string | null
           art_movements: string[] | null
           artists: string[] | null
@@ -34,6 +35,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null
@@ -52,6 +54,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null

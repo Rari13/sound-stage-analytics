@@ -17,3 +17,15 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.send-ticket-email]
+verify_jwt = false
+
+[functions.create-group-order]
+verify_jwt = true
+
+[functions.pay-group-share]
+verify_jwt = false
+
+[functions.generate-flyer]
+verify_jwt = true
