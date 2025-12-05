@@ -99,6 +99,7 @@ export type Database = {
           starts_at: string
           status: string | null
           subtitle: string | null
+          survey_completed_at: string | null
           timezone: string | null
           title: string
           updated_at: string | null
@@ -128,6 +129,7 @@ export type Database = {
           starts_at: string
           status?: string | null
           subtitle?: string | null
+          survey_completed_at?: string | null
           timezone?: string | null
           title: string
           updated_at?: string | null
@@ -157,6 +159,7 @@ export type Database = {
           starts_at?: string
           status?: string | null
           subtitle?: string | null
+          survey_completed_at?: string | null
           timezone?: string | null
           title?: string
           updated_at?: string | null
