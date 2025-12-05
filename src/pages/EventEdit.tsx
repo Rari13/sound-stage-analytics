@@ -28,9 +28,11 @@ const EventEdit = () => {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [geolocating, setGeolocating] = useState(false);
   const [organizerId, setOrganizerId] = useState<string>("");
   const [eventSlug, setEventSlug] = useState<string>("");
+  const [eventStatus, setEventStatus] = useState<string>("draft");
   
   const [formData, setFormData] = useState({
     title: "",
@@ -106,6 +108,7 @@ const EventEdit = () => {
       });
 
       setEventSlug(eventData.slug || "");
+      setEventStatus(eventData.status || "draft");
 
       // Get price tiers
       const { data: tiersData } = await supabase
@@ -251,6 +254,37 @@ const EventEdit = () => {
     });
 
     navigate("/orga/home");
+  };
+
+  const handlePublish = async () => {
+    if (!eventId) return;
+    
+    setPublishing(true);
+
+    const { error } = await supabase
+      .from('events')
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+      })
+      .eq('id', eventId);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de publier l'événement",
+        variant: "destructive",
+      });
+      setPublishing(false);
+      return;
+    }
+
+    setEventStatus('published');
+    toast({
+      title: "Événement publié !",
+      description: "Votre événement est maintenant visible par tous",
+    });
+    setPublishing(false);
   };
 
   const addPriceTier = () => {
@@ -527,17 +561,38 @@ const EventEdit = () => {
               ))}
             </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={submitting} className="flex-1">
-                {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate("/orga/home")}
-              >
-                Annuler
-              </Button>
+            <div className="flex flex-col gap-4 pt-4">
+              <div className="flex gap-4">
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => navigate("/orga/home")}
+                >
+                  Annuler
+                </Button>
+              </div>
+              
+              {eventStatus === 'draft' && (
+                <Button 
+                  type="button"
+                  variant="accent"
+                  size="lg"
+                  className="w-full"
+                  disabled={publishing}
+                  onClick={handlePublish}
+                >
+                  {publishing ? "Publication..." : "🚀 Publier l'événement"}
+                </Button>
+              )}
+              
+              {eventStatus === 'published' && (
+                <div className="text-center text-sm text-muted-foreground bg-green-500/10 p-3 rounded-lg">
+                  ✓ Événement publié et visible par tous
+                </div>
+              )}
             </div>
           </form>
         </Card>
