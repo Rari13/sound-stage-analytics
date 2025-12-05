@@ -21,6 +21,9 @@ interface Event {
   ends_at: string;
   city: string;
   venue: string;
+  address_line1: string | null;
+  latitude: number | null;
+  longitude: number | null;
   status: string;
 }
 
@@ -213,15 +216,30 @@ const EventDetails = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-secondary rounded-2xl">
+          <button 
+            onClick={() => {
+              // Build destination: prefer coordinates, fallback to address
+              let destination = '';
+              if (event.latitude && event.longitude) {
+                destination = `${event.latitude},${event.longitude}`;
+              } else {
+                const addressParts = [event.venue, event.address_line1, event.city].filter(Boolean);
+                destination = encodeURIComponent(addressParts.join(', '));
+              }
+              const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+              window.open(mapsUrl, '_blank');
+            }}
+            className="w-full flex items-center gap-4 p-4 bg-secondary rounded-2xl hover:bg-secondary/80 transition-colors text-left active:scale-[0.98]"
+          >
             <div className="h-10 w-10 bg-background rounded-full flex items-center justify-center shadow-soft">
               <MapPin className="h-5 w-5" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-bold">{event.venue}</p>
               <p className="text-sm text-muted-foreground">{event.city}</p>
             </div>
-          </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
 
         {/* Description */}
