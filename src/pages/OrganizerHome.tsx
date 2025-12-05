@@ -97,23 +97,22 @@ export default function OrganizerHome() {
         setEventTicketCounts(counts);
       }
 
-      // Check for post-event survey
+      // Check for post-event survey - only show for events that ended and haven't been surveyed yet
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       
       const { data: recentEndedEvents } = await supabase
         .from("events")
-        .select("id, title, description")
+        .select("id, title, survey_completed_at")
         .eq("organizer_id", orgData.id)
         .lt("ends_at", now)
         .gt("ends_at", threeDaysAgo.toISOString())
+        .is("survey_completed_at", null)
         .limit(1);
 
       if (recentEndedEvents && recentEndedEvents.length > 0) {
         const event = recentEndedEvents[0];
-        if (!event.description?.includes("SURVEY_DATA")) {
-          setSurveyEvent({ id: event.id, title: event.title });
-        }
+        setSurveyEvent({ id: event.id, title: event.title });
       }
 
       // Fetch stats

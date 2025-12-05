@@ -19,6 +19,24 @@ export function PostEventSurvey({ isOpen, onClose, event }: PostEventSurveyProps
   const [context, setContext] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const markSurveyCompleted = async (surveyData?: { weather: string; context_tags: string[] }) => {
+    const updateData: Record<string, unknown> = {
+      survey_completed_at: new Date().toISOString()
+    };
+    
+    // If survey was filled, store the data in short_description (JSON format)
+    if (surveyData) {
+      updateData.short_description = JSON.stringify(surveyData);
+    }
+
+    const { error } = await supabase
+      .from('events')
+      .update(updateData)
+      .eq('id', event.id);
+
+    return { error };
+  };
+
   const handleSubmit = async () => {
     if (!weather) {
       toast.error("Veuillez indiquer la météo");
@@ -27,18 +45,7 @@ export function PostEventSurvey({ isOpen, onClose, event }: PostEventSurveyProps
 
     setSubmitting(true);
     
-    const surveyData = {
-      weather,
-      context_tags: context,
-      survey_completed_at: new Date().toISOString()
-    };
-
-    const { error } = await supabase
-      .from('events')
-      .update({ 
-        description: `[SURVEY_DATA:${JSON.stringify(surveyData)}]` 
-      })
-      .eq('id', event.id);
+    const { error } = await markSurveyCompleted({ weather, context_tags: context });
 
     if (error) {
       toast.error("Erreur lors de l'enregistrement");
@@ -47,6 +54,12 @@ export function PostEventSurvey({ isOpen, onClose, event }: PostEventSurveyProps
       onClose();
     }
     setSubmitting(false);
+  };
+
+  const handleDismiss = async () => {
+    // Mark as completed even if user skips, so it won't show again
+    await markSurveyCompleted();
+    onClose();
   };
 
   return (
@@ -116,7 +129,7 @@ export function PostEventSurvey({ isOpen, onClose, event }: PostEventSurveyProps
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Plus tard</Button>
+          <Button variant="ghost" onClick={handleDismiss}>Ignorer</Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enregistrer le bilan"}
           </Button>
