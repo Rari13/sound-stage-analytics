@@ -630,6 +630,87 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_requests: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          order_id: string
+          organizer_id: string
+          reason: string
+          responded_at: string | null
+          response_message: string | null
+          status: string
+          ticket_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          order_id: string
+          organizer_id: string
+          reason: string
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string
+          ticket_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          order_id?: string
+          organizer_id?: string
+          reason?: string
+          responded_at?: string | null
+          response_message?: string | null
+          status?: string
+          ticket_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scan_devices: {
         Row: {
           created_at: string | null
