@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2 } from "lucide-react";
+import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2, Link2, Copy, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { QRScanner } from "@/components/QRScanner";
 
@@ -25,6 +25,8 @@ export default function OrganizerScan() {
   const [organizerId, setOrganizerId] = useState<string>("");
   const [scannedCount, setScannedCount] = useState(0);
   const [showScanner, setShowScanner] = useState(false);
+  const [scanLinks, setScanLinks] = useState<any[]>([]);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -66,6 +68,17 @@ export default function OrganizerScan() {
       .order('starts_at', { ascending: true });
 
     setEvents(eventsData || []);
+
+    // Load active scan links
+    const { data: linksData } = await supabase
+      .from('scan_links')
+      .select(`*, events:event_id (title)`)
+      .eq('organizer_id', orgData.id)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    setScanLinks(linksData || []);
   };
 
   const createDevice = async () => {
@@ -119,6 +132,66 @@ export default function OrganizerScan() {
       toast({ title: "Appareil supprimé" });
       await loadOrganizerData();
     }
+  };
+
+  const generateScanLink = async () => {
+    if (!selectedEvent || !selectedDevice || !organizerId) {
+      toast({
+        title: "Sélectionnez un événement et un appareil",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingLink(true);
+
+    // Create link that expires in 24 hours
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    const { data, error } = await supabase
+      .from('scan_links')
+      .insert({
+        organizer_id: organizerId,
+        event_id: selectedEvent,
+        device_id: selectedDevice,
+        expires_at: expiresAt.toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const link = `${window.location.origin}/scan/${data.token}`;
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Lien créé et copié !",
+        description: "Valide 24h. Partagez-le avec votre équipe.",
+      });
+      await loadOrganizerData();
+    }
+    setGeneratingLink(false);
+  };
+
+  const copyLink = async (token: string) => {
+    const link = `${window.location.origin}/scan/${token}`;
+    await navigator.clipboard.writeText(link);
+    toast({ title: "Lien copié !" });
+  };
+
+  const deactivateLink = async (linkId: string) => {
+    await supabase
+      .from('scan_links')
+      .update({ is_active: false })
+      .eq('id', linkId);
+    
+    toast({ title: "Lien désactivé" });
+    await loadOrganizerData();
   };
 
   const startSession = async () => {
@@ -302,15 +375,67 @@ export default function OrganizerScan() {
                 </Select>
               </div>
 
-              <Button 
-                onClick={startSession} 
-                disabled={!selectedEvent || !selectedDevice || loading}
-                className="w-full"
-                variant="accent"
-                size="lg"
-              >
-                Démarrer la session
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={startSession} 
+                  disabled={!selectedEvent || !selectedDevice || loading}
+                  className="flex-1"
+                  variant="accent"
+                  size="lg"
+                >
+                  Démarrer ici
+                </Button>
+                <Button 
+                  onClick={generateScanLink} 
+                  disabled={!selectedEvent || !selectedDevice || generatingLink}
+                  variant="outline"
+                  size="lg"
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  {generatingLink ? "..." : "Créer un lien"}
+                </Button>
+              </div>
+
+              {/* Active Links */}
+              {scanLinks.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Label className="text-sm text-muted-foreground">Liens actifs</Label>
+                  {scanLinks.map(link => (
+                    <div key={link.id} className="p-3 border rounded-lg flex items-center gap-2 bg-muted/30">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{link.events?.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Expire {new Date(link.expires_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => copyLink(link.token)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => window.open(`/scan/${link.token}`, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => deactivateLink(link.id)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-6">

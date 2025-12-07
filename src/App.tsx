@@ -27,6 +27,7 @@ import OrganizerSubscription from "./pages/OrganizerSubscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
 import GroupPayJoin from "./pages/GroupPayJoin";
+import PublicScan from "./pages/PublicScan";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -160,8 +161,10 @@ const App = () => (
       
       <Route path="/events/:slug" element={<EventDetails />} />
       <Route path="/group-pay/:shareCode" element={<GroupPayJoin />} />
+      <Route path="/scan/:token" element={<PublicScan />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+      <Route path="*" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </TooltipProvider>
