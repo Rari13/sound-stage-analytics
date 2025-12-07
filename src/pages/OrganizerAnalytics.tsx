@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Users, Heart, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3 } from "lucide-react";
+import { Brain, Users, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3 } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts";
@@ -156,22 +156,13 @@ export default function OrganizerAnalytics() {
       </div>
 
       {/* KPIs Audience */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4 text-center">
             <Users className="h-5 w-5 text-primary mx-auto mb-1" />
             <div className="text-2xl font-bold">{audienceStats.followers}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Abonnés
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-pink-500/20 bg-pink-500/5">
-          <CardContent className="p-4 text-center">
-            <Heart className="h-5 w-5 text-pink-500 mx-auto mb-1" />
-            <div className="text-2xl font-bold">{audienceStats.likes}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Likes
             </div>
           </CardContent>
         </Card>

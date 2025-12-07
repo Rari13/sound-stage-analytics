@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera } from "lucide-react";
+import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { QRScanner } from "@/components/QRScanner";
 
@@ -99,6 +99,26 @@ export default function OrganizerScan() {
       await loadOrganizerData();
     }
     setLoading(false);
+  };
+
+  const deleteDevice = async (deviceId: string, deviceName: string) => {
+    if (!confirm(`Supprimer l'appareil "${deviceName}" ?`)) return;
+    
+    const { error } = await supabase
+      .from('scan_devices')
+      .delete()
+      .eq('id', deviceId);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Appareil supprimé" });
+      await loadOrganizerData();
+    }
   };
 
   const startSession = async () => {
@@ -216,11 +236,21 @@ export default function OrganizerScan() {
           {devices.length > 0 ? (
             <div className="space-y-2">
               {devices.map(device => (
-                <div key={device.id} className="p-3 border rounded-lg flex justify-between items-center">
-                  <span className="font-medium">{device.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {device.last_seen ? `Vu le ${new Date(device.last_seen).toLocaleString()}` : 'Jamais utilisé'}
-                  </span>
+                <div key={device.id} className="p-3 border rounded-lg flex justify-between items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium block truncate">{device.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {device.last_seen ? `Vu le ${new Date(device.last_seen).toLocaleString()}` : 'Jamais utilisé'}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => deleteDevice(device.id, device.name)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
