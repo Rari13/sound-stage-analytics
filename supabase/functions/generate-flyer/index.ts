@@ -108,41 +108,11 @@ ${logoBase64 ? '- Incorporate the provided logo elegantly into the design, place
     const base64Match = imageData.match(/^data:image\/\w+;base64,(.+)$/);
     const imageBase64 = base64Match ? base64Match[1] : imageData;
 
-    // Convert Base64 to binary
-    const binaryString = atob(imageBase64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    console.log("Returning base64 image for client-side processing");
 
-    // Store in Supabase Storage
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const fileName = `${organizerId}/ai-${Date.now()}.png`;
-    const { error: uploadError } = await supabase.storage
-      .from('event-banners')
-      .upload(fileName, bytes, {
-        contentType: 'image/png',
-        upsert: false
-      });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      throw uploadError;
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('event-banners')
-      .getPublicUrl(fileName);
-
-    console.log("Flyer uploaded successfully:", publicUrl);
-
+    // Return base64 directly for client-side canvas processing
     return new Response(
-      JSON.stringify({ url: publicUrl }),
+      JSON.stringify({ imageBase64 }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
