@@ -672,6 +672,68 @@ export type Database = {
           },
         ]
       }
+      scan_links: {
+        Row: {
+          created_at: string
+          device_id: string
+          event_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          organizer_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          event_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          organizer_id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          organizer_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_links_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "scan_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_links_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_links_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scan_logs: {
         Row: {
           details: Json | null
