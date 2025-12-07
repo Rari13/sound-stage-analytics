@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Sparkles, Send, Loader2, RotateCcw, Check, Image as ImageIcon, X, Plus } from "lucide-react";
+import { Sparkles, Send, Loader2, RotateCcw, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface SoundStudioAIProps {
@@ -15,15 +14,57 @@ interface SoundStudioAIProps {
 interface Message {
   role: "ai" | "user";
   content: string;
+  showStyles?: boolean;
 }
 
 const MAX_EXCHANGES = 3;
+
+// Visual style examples with preview colors/gradients
+const STYLE_EXAMPLES = [
+  { 
+    id: "neon", 
+    label: "Néon / Cyberpunk",
+    gradient: "from-purple-600 via-pink-500 to-cyan-400",
+    description: "Couleurs électriques, ambiance club futuriste"
+  },
+  { 
+    id: "luxury", 
+    label: "Luxe / Gold",
+    gradient: "from-amber-300 via-yellow-500 to-amber-700",
+    description: "Or, champagne, marbre noir"
+  },
+  { 
+    id: "retro", 
+    label: "Rétro / Y2K",
+    gradient: "from-pink-400 via-fuchsia-500 to-cyan-300",
+    description: "Chrome, rose-cyan, nostalgie 2000"
+  },
+  { 
+    id: "underground", 
+    label: "Underground / Techno",
+    gradient: "from-gray-900 via-zinc-800 to-neutral-900",
+    description: "Sombre, industriel, béton"
+  },
+  { 
+    id: "summer", 
+    label: "Summer / Festival",
+    gradient: "from-orange-400 via-red-400 to-pink-500",
+    description: "Coucher de soleil, plage, tropical"
+  },
+  { 
+    id: "minimal", 
+    label: "Minimaliste",
+    gradient: "from-slate-100 via-gray-200 to-slate-300",
+    description: "Épuré, typographie forte, espace"
+  },
+];
 
 export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Décris-moi l'ambiance et le style que tu imagines pour ton affiche. Par exemple : le type d'événement, les couleurs, l'énergie que tu veux transmettre..."
+      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
+      showStyles: true
     }
   ]);
   const [userInput, setUserInput] = useState("");
@@ -64,10 +105,26 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
     setLogoPreview(null);
   };
 
+  const selectStyle = (styleId: string) => {
+    const style = STYLE_EXAMPLES.find(s => s.id === styleId);
+    if (!style) return;
+    
+    const userMessage = `Je veux un style ${style.label} - ${style.description}`;
+    setUserInput(userMessage);
+    
+    // Auto-send after selecting
+    setTimeout(() => {
+      sendMessageWithContent(userMessage);
+    }, 100);
+  };
+
   const sendMessage = async () => {
     if (!userInput.trim() || isThinking) return;
+    await sendMessageWithContent(userInput);
+  };
 
-    const newUserMessage: Message = { role: "user", content: userInput };
+  const sendMessageWithContent = async (content: string) => {
+    const newUserMessage: Message = { role: "user", content };
     const updatedMessages = [...messages, newUserMessage];
     setMessages(updatedMessages);
     setUserInput("");
@@ -197,7 +254,8 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
   const resetConversation = () => {
     setMessages([{
       role: "ai",
-      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Décris-moi l'ambiance et le style que tu imagines pour ton affiche."
+      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
+      showStyles: true
     }]);
     setExchangeCount(0);
     setGeneratedPreview(null);
@@ -231,23 +289,47 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
       {/* Chat Messages */}
       <div className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex",
-              msg.role === "user" ? "justify-end" : "justify-start"
-            )}
-          >
+          <div key={i} className="space-y-2">
             <div
               className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-white dark:bg-gray-800 shadow-sm border rounded-bl-md"
+                "flex",
+                msg.role === "user" ? "justify-end" : "justify-start"
               )}
             >
-              {msg.content}
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-white dark:bg-gray-800 shadow-sm border rounded-bl-md"
+                )}
+              >
+                {msg.content}
+              </div>
             </div>
+            
+            {/* Style Examples Grid */}
+            {msg.showStyles && msg.role === "ai" && (
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                {STYLE_EXAMPLES.map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => selectStyle(style.id)}
+                    className="group relative overflow-hidden rounded-xl p-3 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <div className={cn(
+                      "absolute inset-0 bg-gradient-to-br opacity-90",
+                      style.gradient
+                    )} />
+                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="relative z-10">
+                      <p className="font-semibold text-white text-xs drop-shadow-md">{style.label}</p>
+                      <p className="text-[10px] text-white/80 mt-0.5 line-clamp-1">{style.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         
