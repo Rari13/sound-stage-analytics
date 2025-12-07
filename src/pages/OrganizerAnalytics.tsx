@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Users, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Brain, Users, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3, Send, MessageCircle } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface SwipeChartData {
   name: string;
@@ -17,16 +18,22 @@ interface SwipeChartData {
   eventId: string;
 }
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export default function OrganizerAnalytics() {
   const { user } = useAuth();
   const { isPremium, organizerId, upgradeToPremium } = useSubscription();
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState("");
   const [audienceStats, setAudienceStats] = useState({ followers: 0, likes: 0, conversionRate: 0 });
   const [upgrading, setUpgrading] = useState(false);
   const [selectedCity, setSelectedCity] = useState("");
-  const [analysisType, setAnalysisType] = useState<string>("");
   const [swipeChartData, setSwipeChartData] = useState<SwipeChartData[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [userQuestion, setUserQuestion] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (organizerId) {
@@ -105,26 +112,62 @@ export default function OrganizerAnalytics() {
     setSwipeChartData(chartData);
   };
 
-  const handleAIAnalysis = async (type: string, city?: string) => {
-    if (!isPremium) {
-      toast.error("Fonctionnalité Premium requise");
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  const handleQuickAction = async (type: string) => {
+    const prompts: Record<string, string> = {
+      "general-insights": "Analyse mes performances globales et donne-moi des conseils stratégiques.",
+      "demand-supply-analysis": "Compare l'offre de mes événements avec la demande réelle des utilisateurs."
+    };
+    const question = prompts[type] || "";
+    if (question) {
+      await handleSendQuestion(question);
+    }
+  };
+
+  const handleSendQuestion = async (question?: string) => {
+    const messageToSend = question || userQuestion.trim();
+    if (!messageToSend || !isPremium) {
+      if (!isPremium) toast.error("Fonctionnalité Premium requise");
       return;
     }
+
+    const newUserMessage: ChatMessage = { role: "user", content: messageToSend };
+    setChatMessages(prev => [...prev, newUserMessage]);
+    setUserQuestion("");
     setAiLoading(true);
-    setAnalysisType(type);
+
     try {
       const { data, error } = await supabase.functions.invoke("ai-analytics", {
-        body: { type, organizerId, city },
+        body: { 
+          type: "custom-question", 
+          organizerId, 
+          question: messageToSend,
+          conversationHistory: chatMessages 
+        },
       });
       if (error) throw error;
-      setAiAnalysis(data.analysis);
-      toast.success("Analyse générée");
+      
+      const assistantMessage: ChatMessage = { role: "assistant", content: data.analysis };
+      setChatMessages(prev => [...prev, assistantMessage]);
     } catch (e) {
       console.error(e);
       toast.error("Erreur lors de l'analyse IA");
+      setChatMessages(prev => prev.slice(0, -1)); // Remove the user message on error
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleMarketAnalysis = async () => {
+    if (!selectedCity) return;
+    await handleSendQuestion(`Analyse le potentiel du marché dans la ville de ${selectedCity}. Quelles sont les opportunités et les défis pour un organisateur d'événements ?`);
   };
 
   const handleUpgrade = async () => {
@@ -223,57 +266,113 @@ export default function OrganizerAnalytics() {
         </Card>
       )}
 
-      {/* Insight Psychologique */}
+      {/* AI Chat Interface */}
       <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5 overflow-hidden relative">
         <div className="absolute top-0 right-0 p-3 opacity-5">
           <Brain className="h-24 w-24" />
         </div>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Brain className="h-5 w-5 text-primary" />
-            Psychologie Client
+            <MessageCircle className="h-5 w-5 text-primary" />
+            Assistant Intelligence
           </CardTitle>
           <CardDescription>
-            Analyse comportementale de votre audience
+            Posez vos questions sur votre audience et stratégie
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 bg-background/60 backdrop-blur rounded-xl border text-sm leading-relaxed min-h-[80px] whitespace-pre-wrap">
-            {aiAnalysis || (
-              <span className="text-muted-foreground">
-                Cliquez sur un bouton pour analyser le comportement de vos
-                clients et obtenir des conseils stratégiques.
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+          {/* Quick Actions */}
+          <div className="flex gap-2 flex-wrap">
             <Button
-              onClick={() => handleAIAnalysis("general-insights")}
+              onClick={() => handleQuickAction("general-insights")}
               disabled={aiLoading || !isPremium}
-              variant={analysisType === "general-insights" ? "default" : "outline"}
-              className="w-full"
+              variant="outline"
+              size="sm"
+              className="text-xs"
             >
-              {aiLoading && analysisType === "general-insights" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <TrendingUp className="mr-2 h-4 w-4" />
-              )}
+              <TrendingUp className="mr-1 h-3 w-3" />
               Performance
             </Button>
             <Button
-              onClick={() => handleAIAnalysis("demand-supply-analysis")}
+              onClick={() => handleQuickAction("demand-supply-analysis")}
               disabled={aiLoading || !isPremium}
-              variant={analysisType === "demand-supply-analysis" ? "default" : "outline"}
-              className="w-full"
+              variant="outline"
+              size="sm"
+              className="text-xs"
             >
-              {aiLoading && analysisType === "demand-supply-analysis" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <BarChart3 className="mr-2 h-4 w-4" />
-              )}
+              <BarChart3 className="mr-1 h-3 w-3" />
               Offre vs Demande
             </Button>
           </div>
+
+          {/* Chat Messages */}
+          <div className="bg-background/60 backdrop-blur rounded-xl border min-h-[150px] max-h-[300px] overflow-y-auto p-3 space-y-3">
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-muted-foreground text-sm py-8">
+                <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Posez une question ou utilisez les boutons rapides</p>
+                <p className="text-xs mt-1">Ex: "Pourquoi mes ventes ont baissé ce mois-ci ?"</p>
+              </div>
+            ) : (
+              chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            {aiLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Analyse en cours...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="flex gap-2">
+            <Textarea
+              placeholder={isPremium ? "Posez votre question..." : "Premium requis"}
+              value={userQuestion}
+              onChange={(e) => setUserQuestion(e.target.value)}
+              disabled={!isPremium || aiLoading}
+              className="min-h-[44px] max-h-[100px] resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendQuestion();
+                }
+              }}
+            />
+            <Button
+              onClick={() => handleSendQuestion()}
+              disabled={aiLoading || !isPremium || !userQuestion.trim()}
+              size="icon"
+              className="shrink-0 h-[44px] w-[44px]"
+            >
+              {aiLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
           {!isPremium && (
             <p className="text-xs text-center text-muted-foreground">
               Premium requis pour les analyses IA
@@ -316,10 +415,10 @@ export default function OrganizerAnalytics() {
                   className="flex-1 px-4 py-2 rounded-lg border bg-background text-sm"
                 />
                 <Button
-                  onClick={() => handleAIAnalysis("market-analysis", selectedCity)}
+                  onClick={handleMarketAnalysis}
                   disabled={aiLoading || !selectedCity}
                 >
-                  {aiLoading && analysisType === "market-analysis" ? (
+                  {aiLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     "Analyser"

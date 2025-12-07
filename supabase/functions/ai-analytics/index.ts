@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, organizerId, eventId, city } = await req.json();
+    const { type, organizerId, eventId, city, question, conversationHistory } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -340,6 +340,152 @@ Fournis:
 3. Recommandations pour améliorer les ventes futures
 4. Insights sur la saisonnalité
 5. Suggestions de nouveaux types d'événements à créer`;
+
+    } else if (type === "custom-question" && question) {
+      // Custom question from the organizer
+      console.log("Processing custom question:", question);
+
+      // Fetch comprehensive data for context
+      const { data: events } = await supabase
+        .from("events")
+        .select(`
+          id, title, starts_at, ends_at, capacity, status, city, music_genres, event_type,
+          price_tiers(price_cents, name)
+        `)
+        .eq("organizer_id", organizerId)
+        .order("starts_at", { ascending: false })
+        .limit(15);
+
+      const eventIds = events?.map(e => e.id) || [];
+      
+      // Get swipes data
+      let swipesData: any[] = [];
+      if (eventIds.length > 0) {
+        const { data: swipes } = await supabase
+          .from("swipes")
+          .select("event_id, direction, filters_context, created_at")
+          .in("event_id", eventIds);
+        swipesData = swipes || [];
+      }
+
+      // Get tickets and orders
+      let ticketsCount = 0;
+      let ordersData: any[] = [];
+      if (eventIds.length > 0) {
+        const { count } = await supabase
+          .from("tickets")
+          .select("*", { count: "exact", head: true })
+          .in("event_id", eventIds);
+        ticketsCount = count || 0;
+
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("event_id, amount_total_cents, status, created_at")
+          .in("event_id", eventIds)
+          .eq("status", "completed");
+        ordersData = orders || [];
+      }
+
+      // Get followers
+      const { count: followersCount } = await supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("organizer_id", organizerId);
+
+      // Get historical events
+      const { data: historicalEvents } = await supabase
+        .from("historical_events")
+        .select("title, city, genre, tickets_sold, revenue_cents, date")
+        .eq("organizer_id", organizerId)
+        .order("date", { ascending: false })
+        .limit(10);
+
+      // Calculate stats
+      const likes = swipesData.filter(s => s.direction === 'right').length;
+      const dislikes = swipesData.filter(s => s.direction === 'left').length;
+      const totalRevenue = ordersData.reduce((sum, o) => sum + (o.amount_total_cents || 0), 0) / 100;
+
+      systemPrompt = `Tu es un assistant IA expert en organisation d'événements et en analyse comportementale. Tu aides les organisateurs à comprendre leur audience, optimiser leurs ventes et développer leur activité.
+
+Tu as accès aux données complètes de l'organisateur et tu dois répondre de manière précise, personnalisée et actionnable. Sois concis mais complet. Utilise des émojis avec parcimonie pour structurer ta réponse.
+
+CONTEXTE ORGANISATEUR:
+- Abonnés: ${followersCount || 0}
+- Billets vendus (total): ${ticketsCount}
+- Revenus (total): ${totalRevenue.toFixed(2)}€
+- Engagement: ${likes} likes, ${dislikes} dislikes (${likes + dislikes > 0 ? ((likes / (likes + dislikes)) * 100).toFixed(1) : 0}% positif)
+
+ÉVÉNEMENTS RÉCENTS:
+${JSON.stringify(events?.map(e => ({
+  titre: e.title,
+  ville: e.city,
+  date: e.starts_at,
+  statut: e.status,
+  genres: e.music_genres,
+  type: e.event_type,
+  tarifs: e.price_tiers?.map((p: any) => `${p.name}: ${p.price_cents/100}€`)
+})) || [], null, 2)}
+
+HISTORIQUE (importé):
+${JSON.stringify(historicalEvents || [], null, 2)}
+
+DONNÉES DE SWIPES:
+- Total: ${swipesData.length}
+- Avec filtres de recherche: ${swipesData.filter(s => s.filters_context).length}`;
+
+      // Build conversation context
+      const conversationMessages = conversationHistory?.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content
+      })) || [];
+
+      userPrompt = question;
+
+      // Include conversation history in the AI call
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...conversationMessages,
+        { role: "user", content: userPrompt }
+      ];
+
+      // Special handling for custom questions with conversation history
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ error: "Limite de requêtes atteinte. Réessayez dans quelques instants." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ error: "Crédits insuffisants. Veuillez recharger votre compte." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const analysis = data.choices[0].message.content;
+
+      console.log("Custom question answered:", { organizerId, question });
+
+      return new Response(
+        JSON.stringify({ analysis }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Call Lovable AI
