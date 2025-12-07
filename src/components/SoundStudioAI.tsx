@@ -269,25 +269,25 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
 
   return (
     <div className="rounded-xl border bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20 border-purple-100 dark:border-purple-800/50 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-purple-100 dark:border-purple-800/50 bg-white/50 dark:bg-black/20">
+      {/* Header - Compact for mobile */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-purple-100 dark:border-purple-800/50 bg-white/50 dark:bg-black/20">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
-            <Sparkles className="h-4 w-4 text-white" />
+          <div className="p-1.5 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+            <Sparkles className="h-3.5 w-3.5 text-white" />
           </div>
           <div>
-            <h4 className="font-semibold text-sm">Sound Studio AI</h4>
-            <p className="text-[10px] text-muted-foreground">Échange {exchangeCount}/{MAX_EXCHANGES}</p>
+            <h4 className="font-semibold text-xs">Sound Studio AI</h4>
+            <p className="text-[9px] text-muted-foreground">{exchangeCount}/{MAX_EXCHANGES}</p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={resetConversation} className="text-xs">
+        <Button variant="ghost" size="sm" onClick={resetConversation} className="text-[10px] h-7 px-2">
           <RotateCcw className="h-3 w-3 mr-1" />
           Recommencer
         </Button>
       </div>
 
-      {/* Chat Messages */}
-      <div className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
+      {/* Chat Messages - Compact */}
+      <div className="px-3 py-2 space-y-2 max-h-[200px] overflow-y-auto">
         {messages.map((msg, i) => (
           <div key={i} className="space-y-2">
             <div
@@ -298,33 +298,32 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
             >
               <div
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                  "max-w-[90%] rounded-xl px-3 py-2 text-xs",
                   msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-white dark:bg-gray-800 shadow-sm border rounded-bl-md"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-white dark:bg-gray-800 shadow-sm border rounded-bl-sm"
                 )}
               >
                 {msg.content}
               </div>
             </div>
             
-            {/* Style Examples Grid */}
+            {/* Style Examples Grid - 3 columns on mobile */}
             {msg.showStyles && msg.role === "ai" && (
-              <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="grid grid-cols-3 gap-1.5 mt-2">
                 {STYLE_EXAMPLES.map((style) => (
                   <button
                     key={style.id}
                     onClick={() => selectStyle(style.id)}
-                    className="group relative overflow-hidden rounded-xl p-3 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="group relative overflow-hidden rounded-lg p-2 text-left transition-all active:scale-[0.96]"
                   >
                     <div className={cn(
                       "absolute inset-0 bg-gradient-to-br opacity-90",
                       style.gradient
                     )} />
-                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="absolute inset-0 bg-black/10" />
                     <div className="relative z-10">
-                      <p className="font-semibold text-white text-xs drop-shadow-md">{style.label}</p>
-                      <p className="text-[10px] text-white/80 mt-0.5 line-clamp-1">{style.description}</p>
+                      <p className="font-medium text-white text-[10px] leading-tight drop-shadow-md line-clamp-2">{style.label}</p>
                     </div>
                   </button>
                 ))}
@@ -335,11 +334,11 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
         
         {isThinking && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-800 shadow-sm border rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="bg-white dark:bg-gray-800 shadow-sm border rounded-xl rounded-bl-sm px-3 py-2">
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           </div>
@@ -347,54 +346,55 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
 
         {isGenerating && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-800 shadow-sm border rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
-              <span className="text-sm text-muted-foreground">Génération en cours...</span>
+            <div className="bg-white dark:bg-gray-800 shadow-sm border rounded-xl rounded-bl-sm px-3 py-2 flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
+              <span className="text-xs text-muted-foreground">Génération...</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Generated Preview */}
+      {/* Generated Preview - Compact */}
       {generatedPreview && (
-        <div className="px-4 pb-4">
-          <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-purple-200 dark:border-purple-700">
+        <div className="px-3 pb-3">
+          <div className="relative aspect-[4/5] rounded-lg overflow-hidden border border-purple-200 dark:border-purple-700">
             <img src={generatedPreview} alt="Aperçu" className="w-full h-full object-cover" />
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-2">
             <Button 
               onClick={confirmImage} 
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+              size="sm"
+              className="flex-1 h-9 text-xs bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
             >
-              <Check className="h-4 w-4 mr-2" />
-              Utiliser cette image
+              <Check className="h-3 w-3 mr-1" />
+              Utiliser
             </Button>
-            <Button variant="outline" onClick={resetConversation} className="flex-1">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Recommencer
+            <Button variant="outline" size="sm" onClick={resetConversation} className="flex-1 h-9 text-xs">
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Refaire
             </Button>
           </div>
         </div>
       )}
 
-      {/* Input Area */}
+      {/* Input Area - Compact */}
       {!generatedPreview && !isGenerating && (
-        <div className="p-4 border-t border-purple-100 dark:border-purple-800/50 bg-white/30 dark:bg-black/10">
-          {/* Logo Upload */}
-          <div className="mb-3">
+        <div className="px-3 py-2 border-t border-purple-100 dark:border-purple-800/50 bg-white/30 dark:bg-black/10">
+          {/* Logo Upload - Inline compact */}
+          <div className="mb-2">
             {logoPreview ? (
-              <div className="flex items-center gap-2 p-2 bg-background rounded-lg border text-xs">
-                <img src={logoPreview} alt="Logo" className="h-8 w-8 object-contain rounded" />
-                <span className="flex-1 text-muted-foreground">Logo ajouté</span>
-                <Button type="button" variant="ghost" size="sm" onClick={removeLogo} className="h-6 w-6 p-0">
+              <div className="flex items-center gap-2 p-1.5 bg-background rounded-lg border text-[10px]">
+                <img src={logoPreview} alt="Logo" className="h-6 w-6 object-contain rounded" />
+                <span className="flex-1 text-muted-foreground truncate">Logo ajouté</span>
+                <Button type="button" variant="ghost" size="sm" onClick={removeLogo} className="h-5 w-5 p-0">
                   <X className="h-3 w-3" />
                 </Button>
               </div>
             ) : (
               <label className="cursor-pointer">
-                <div className="flex items-center gap-2 p-2 bg-background/80 rounded-lg border border-dashed hover:border-purple-400 transition-colors text-xs">
-                  <Plus className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Ajouter mon logo (optionnel)</span>
+                <div className="flex items-center justify-center gap-1.5 p-1.5 bg-background/80 rounded-lg border border-dashed hover:border-purple-400 transition-colors text-[10px]">
+                  <Plus className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Ajouter mon logo</span>
                 </div>
                 <input
                   type="file"
@@ -406,12 +406,12 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              placeholder="Décris ton événement et l'ambiance souhaitée..."
-              className="min-h-[44px] max-h-[100px] resize-none bg-background text-sm"
+              placeholder="Décris ton événement..."
+              className="min-h-[36px] max-h-[60px] resize-none bg-background text-xs py-2"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -422,14 +422,14 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
             <Button
               onClick={sendMessage}
               disabled={!userInput.trim() || isThinking}
-              className="h-11 w-11 p-0 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              className="h-9 w-9 p-0 shrink-0 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
           
-          <p className="text-[10px] text-center text-muted-foreground mt-2">
-            Propulsé par Gemini Flash + Nano Banana
+          <p className="text-[8px] text-center text-muted-foreground mt-1.5 opacity-60">
+            Propulsé par Nano Banana AI
           </p>
         </div>
       )}
