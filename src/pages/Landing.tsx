@@ -37,7 +37,7 @@ const Landing = () => {
 
           <div className="flex flex-col gap-3 pt-4 max-w-xs mx-auto">
             <Button variant="accent" size="xl" asChild className="w-full">
-              <Link to="/events">
+              <Link to="/signup-client">
                 Découvrir les événements
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
