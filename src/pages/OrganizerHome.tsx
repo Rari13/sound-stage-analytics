@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Users, TrendingUp, MapPin, Loader2, Plus } from "lucide-react";
+import { Calendar, DollarSign, Users, TrendingUp, MapPin, Loader2, Plus, RotateCcw } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,7 @@ export default function OrganizerHome() {
   const [connectingStripe, setConnectingStripe] = useState(false);
   const [eventTicketCounts, setEventTicketCounts] = useState<Record<string, number>>({});
   const [surveyEvent, setSurveyEvent] = useState<{ id: string; title: string } | null>(null);
+  const [pendingRefunds, setPendingRefunds] = useState(0);
 
   useEffect(() => {
     if (searchParams.get("stripe_onboarding") === "complete") {
@@ -114,6 +115,15 @@ export default function OrganizerHome() {
         const event = recentEndedEvents[0];
         setSurveyEvent({ id: event.id, title: event.title });
       }
+
+      // Fetch pending refund requests count
+      const { count: refundCount } = await supabase
+        .from("refund_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("organizer_id", orgData.id)
+        .eq("status", "pending");
+      
+      setPendingRefunds(refundCount || 0);
 
       // Fetch stats
       const { count: eventCount } = await supabase
@@ -265,6 +275,29 @@ export default function OrganizerHome() {
             ticketsSold={eventTicketCounts[nextEvent.id] || 0}
             capacity={nextEvent.capacity || 100}
           />
+        </div>
+      )}
+
+      {/* Refund Requests Alert */}
+      {pendingRefunds > 0 && (
+        <div 
+          className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-center justify-between gap-4 cursor-pointer hover:bg-orange-500/15 transition-colors"
+          onClick={() => navigate("/orga/refunds")}
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center text-white">
+              <RotateCcw className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-orange-900 dark:text-orange-100">
+                {pendingRefunds} demande{pendingRefunds > 1 ? 's' : ''} de remboursement
+              </p>
+              <p className="text-xs text-orange-700 dark:text-orange-300">En attente de votre réponse</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" className="bg-white/50 border-orange-200 hover:bg-white">
+            Voir
+          </Button>
         </div>
       )}
 
