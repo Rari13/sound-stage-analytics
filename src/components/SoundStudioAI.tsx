@@ -429,7 +429,7 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
           </div>
           
           <p className="text-[10px] text-center text-muted-foreground mt-2">
-            Propulsé par Nano Banana AI
+            Propulsé par Gemini Flash + Nano Banana
           </p>
         </div>
       )}
