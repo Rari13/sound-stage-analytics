@@ -9,7 +9,7 @@ const Landing = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="text-xl font-bold">
-            Sound
+            Spark Events
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -111,7 +111,7 @@ const Landing = () => {
       {/* Footer - Minimal */}
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>© 2025 Sound. Tous droits réservés.</p>
+          <p>© 2025 Spark Events. Tous droits réservés.</p>
         </div>
       </footer>
     </div>
