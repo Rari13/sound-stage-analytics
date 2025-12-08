@@ -140,7 +140,7 @@ const SignupOrganizer = () => {
                 className="h-11"
               />
               <p className="text-xs text-muted-foreground">
-                Votre URL : sound.app/@{formData.slug || "votre-slug"}
+                Votre URL : sparkevents.app/@{formData.slug || "votre-slug"}
               </p>
             </div>
             <div className="space-y-2">
