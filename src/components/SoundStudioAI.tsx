@@ -63,7 +63,7 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
+      content: "Salut ! 👋 Je suis ton assistant créatif Spark Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
       showStyles: true
     }
   ]);
@@ -254,7 +254,7 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
   const resetConversation = () => {
     setMessages([{
       role: "ai",
-      content: "Salut ! 👋 Je suis ton assistant créatif Sound Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
+      content: "Salut ! 👋 Je suis ton assistant créatif Spark Studio. Commence par choisir un style qui t'inspire, ou décris-moi directement ta vision !",
       showStyles: true
     }]);
     setExchangeCount(0);
@@ -276,7 +276,7 @@ export function SoundStudioAI({ onComplete, organizerId }: SoundStudioAIProps) {
             <Sparkles className="h-3.5 w-3.5 text-white" />
           </div>
           <div>
-            <h4 className="font-semibold text-xs">Sound Studio AI</h4>
+            <h4 className="font-semibold text-xs">Spark Studio AI</h4>
             <p className="text-[9px] text-muted-foreground">{exchangeCount}/{MAX_EXCHANGES}</p>
           </div>
         </div>

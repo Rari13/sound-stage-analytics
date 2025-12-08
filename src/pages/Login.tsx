@@ -141,7 +141,7 @@ const Login = () => {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Connexion</h1>
             <p className="text-sm text-muted-foreground">
-              Accédez à votre compte Sound
+              Accédez à votre compte Spark Events
             </p>
           </div>
 
