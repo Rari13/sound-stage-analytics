@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Ticket, ArrowRight, Shield, Zap } from "lucide-react";
+import { Ticket, ArrowRight, Shield, Zap, Users, Sparkles, Brain, CreditCard, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Landing = () => {
@@ -8,7 +8,7 @@ const Landing = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="text-xl font-bold">
+          <Link to="/" className="text-xl font-bold text-primary">
             Spark Events
           </Link>
           <div className="flex items-center gap-2">
@@ -22,23 +22,23 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Hero Section - Mobile-first with generous whitespace */}
+      {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 md:pt-40 md:pb-24">
         <div className="container mx-auto max-w-2xl text-center space-y-8">
           <h1 className="text-3xl md:text-5xl font-bold leading-tight">
-            Vos billets.
+            L'événementiel
             <br />
-            <span className="text-muted-foreground">Simplement.</span>
+            <span className="text-primary">réinventé.</span>
           </h1>
           
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Réservez vos places pour les meilleurs événements en quelques secondes.
+            Organisez ou découvrez les meilleurs événements en toute simplicité.
           </p>
 
           <div className="flex flex-col gap-3 pt-4 max-w-xs mx-auto">
-            <Button variant="accent" size="xl" asChild className="w-full">
+            <Button size="xl" asChild className="w-full">
               <Link to="/signup-client">
-                Découvrir les événements
+                Je cherche un événement
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -51,37 +51,84 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Features - Minimal cards */}
+      {/* Features for Clients */}
       <section className="py-16 px-4 bg-secondary/50">
         <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-10">
+            <span className="text-sm font-medium text-primary uppercase tracking-wider">Pour les festivaliers</span>
+            <h2 className="text-2xl md:text-3xl font-bold mt-2">Vivez l'expérience</h2>
+          </div>
+          
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-6 rounded-2xl bg-background">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <Ticket className="h-6 w-6 text-primary-foreground" />
+            <div className="p-6 rounded-2xl bg-background shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Billets sécurisés</h3>
+              <h3 className="font-semibold mb-2">Sécurité intégrée</h3>
               <p className="text-sm text-muted-foreground">
-                QR codes uniques et validation en temps réel
+                Contact de confiance, géolocalisation et retour maison sécurisé
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-background">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-primary-foreground" />
+            <div className="p-6 rounded-2xl bg-background shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Users className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Paiement instantané</h3>
+              <h3 className="font-semibold mb-2">Paiement groupé</h3>
               <p className="text-sm text-muted-foreground">
-                Recevez vos billets par email immédiatement
+                Partagez la note avec vos amis en quelques clics
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-background">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-primary-foreground" />
+            <div className="p-6 rounded-2xl bg-background shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Heart className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">100% fiable</h3>
+              <h3 className="font-semibold mb-2">Événements personnalisés</h3>
               <p className="text-sm text-muted-foreground">
-                Protection contre la fraude et les doublons
+                Découvrez des événements qui vous correspondent vraiment
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features for Organizers */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-10">
+            <span className="text-sm font-medium text-primary uppercase tracking-wider">Pour les organisateurs</span>
+            <h2 className="text-2xl md:text-3xl font-bold mt-2">Boostez vos événements</h2>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+                <Brain className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">IA Analytics</h3>
+              <p className="text-sm text-muted-foreground">
+                Comprenez votre audience et anticipez la demande avec l'IA
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+                <Sparkles className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Spark Studio</h3>
+              <p className="text-sm text-muted-foreground">
+                Créez des visuels professionnels en quelques secondes
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
+              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+                <CreditCard className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Revenus instantanés</h3>
+              <p className="text-sm text-muted-foreground">
+                Recevez vos paiements en temps réel sur votre compte
               </p>
             </div>
           </div>
@@ -89,19 +136,19 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 bg-primary text-primary-foreground">
         <div className="container mx-auto max-w-lg text-center space-y-6">
           <h2 className="text-2xl md:text-3xl font-bold">
             Prêt à commencer ?
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-primary-foreground/80">
             Créez votre compte gratuitement et accédez à tous les événements.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Button size="lg" asChild>
+            <Button size="lg" variant="secondary" asChild>
               <Link to="/signup-client">Créer un compte</Link>
             </Button>
-            <Button variant="outline" size="lg" asChild>
+            <Button variant="outline" size="lg" asChild className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
               <Link to="/login">Se connecter</Link>
             </Button>
           </div>

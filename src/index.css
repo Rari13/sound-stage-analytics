@@ -4,49 +4,49 @@
 
 /* 
   MINIMALIST DESIGN SYSTEM
-  Philosophy: "Less is more" - Apple/Uber inspired
-  Light, clean, with generous whitespace and soft shadows
+  Philosophy: "Less is more" - Apple/Google inspired
+  Light, clean, with generous whitespace and electric blue accents
 */
 
 @layer base {
   :root {
     /* Fond : Blanc pur pour la clarté */
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --foreground: 220 13% 13%;
 
     /* Cartes : Blanc sur blanc avec ombres */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 220 13% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 220 13% 13%;
 
-    /* Primaire : Noir pur (Luxe & Sobre) */
-    --primary: 0 0% 0%;
-    --primary-hover: 0 0% 18%;
-    --primary-foreground: 0 0% 98%;
+    /* Primaire : Bleu électrique */
+    --primary: 217 91% 60%;
+    --primary-hover: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
 
     /* Secondaire : Gris très clair pour les surfaces d'appui */
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 13%;
 
-    /* Accent: Vibrant coral/orange for CTAs */
-    --accent: 12 90% 55%;
-    --accent-hover: 12 90% 48%;
+    /* Accent: Bleu électrique vif pour CTAs */
+    --accent: 217 91% 60%;
+    --accent-hover: 217 91% 50%;
     --accent-foreground: 0 0% 100%;
 
     /* Muted tones */
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
     /* Destructive */
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Bordures : Très subtiles, presque invisibles */
-    --border: 0 0% 92%;
-    --input: 0 0% 92%;
-    --ring: 0 0% 0%;
+    /* Bordures : Très subtiles */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
 
     /* Radius: Coins très arrondis (Apple style) */
     --radius: 1rem;
@@ -184,8 +184,8 @@
   }
 
   @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0.4); }
-    100% { box-shadow: 0 0 0 12px hsl(var(--accent) / 0); }
+    0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+    100% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
   }
 
   .animate-pulse-ring {
