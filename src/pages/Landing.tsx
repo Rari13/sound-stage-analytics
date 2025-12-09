@@ -1,9 +1,50 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Users, Sparkles, Brain, CreditCard, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import sparkLogo from "@/assets/spark-logo.png";
 
 const Landing = () => {
+  const [activeTab, setActiveTab] = useState<"client" | "organizer">("client");
+
+  const clientFeatures = [
+    {
+      icon: Shield,
+      title: "Sécurité intégrée",
+      description: "Contact de confiance, géolocalisation et retour maison sécurisé"
+    },
+    {
+      icon: Users,
+      title: "Paiement groupé",
+      description: "Partagez la note avec vos amis en quelques clics"
+    },
+    {
+      icon: Heart,
+      title: "Événements personnalisés",
+      description: "Découvrez des événements qui vous correspondent vraiment"
+    }
+  ];
+
+  const organizerFeatures = [
+    {
+      icon: Brain,
+      title: "IA Analytics",
+      description: "Comprenez votre audience et anticipez la demande avec l'IA"
+    },
+    {
+      icon: Sparkles,
+      title: "Spark Studio",
+      description: "Créez des visuels professionnels en quelques secondes"
+    },
+    {
+      icon: CreditCard,
+      title: "Revenus instantanés",
+      description: "Recevez vos paiements en temps réel sur votre compte"
+    }
+  ];
+
+  const features = activeTab === "client" ? clientFeatures : organizerFeatures;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -53,86 +94,77 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Features for Clients */}
-      <section className="py-16 px-4 bg-secondary/50">
+      {/* Features Section with Toggle */}
+      <section className="py-16 px-4 bg-secondary/30">
         <div className="container mx-auto max-w-4xl">
+          {/* Toggle Buttons */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex bg-background rounded-full p-1.5 shadow-card border border-border">
+              <button
+                onClick={() => setActiveTab("client")}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                  activeTab === "client"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Pour les clients
+              </button>
+              <button
+                onClick={() => setActiveTab("organizer")}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                  activeTab === "organizer"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Pour les organisateurs
+              </button>
+            </div>
+          </div>
+
+          {/* Title */}
           <div className="text-center mb-10">
-            <span className="text-sm font-medium text-primary uppercase tracking-wider">Pour les festivaliers</span>
-            <h2 className="text-2xl md:text-3xl font-bold mt-2">Vivez l'expérience</h2>
+            <h2 className="text-2xl md:text-3xl font-bold">
+              {activeTab === "client" ? "Vivez l'expérience" : "Boostez vos événements"}
+            </h2>
           </div>
           
+          {/* Features Grid */}
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-6 rounded-2xl bg-background shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-primary" />
+            {features.map((feature, index) => (
+              <div 
+                key={feature.title}
+                className="p-6 rounded-2xl bg-background shadow-card border border-border/50 animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-4 ${
+                  activeTab === "client" 
+                    ? "bg-primary/10" 
+                    : "bg-primary"
+                }`}>
+                  <feature.icon className={`h-6 w-6 ${
+                    activeTab === "client" 
+                      ? "text-primary" 
+                      : "text-primary-foreground"
+                  }`} />
+                </div>
+                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {feature.description}
+                </p>
               </div>
-              <h3 className="font-semibold mb-2">Sécurité intégrée</h3>
-              <p className="text-sm text-muted-foreground">
-                Contact de confiance, géolocalisation et retour maison sécurisé
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-background shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Paiement groupé</h3>
-              <p className="text-sm text-muted-foreground">
-                Partagez la note avec vos amis en quelques clics
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-background shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <Heart className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Événements personnalisés</h3>
-              <p className="text-sm text-muted-foreground">
-                Découvrez des événements qui vous correspondent vraiment
-              </p>
-            </div>
+            ))}
           </div>
-        </div>
-      </section>
 
-      {/* Features for Organizers */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-10">
-            <span className="text-sm font-medium text-primary uppercase tracking-wider">Pour les organisateurs</span>
-            <h2 className="text-2xl md:text-3xl font-bold mt-2">Boostez vos événements</h2>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <Brain className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <h3 className="font-semibold mb-2">IA Analytics</h3>
-              <p className="text-sm text-muted-foreground">
-                Comprenez votre audience et anticipez la demande avec l'IA
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <Sparkles className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <h3 className="font-semibold mb-2">Spark Studio</h3>
-              <p className="text-sm text-muted-foreground">
-                Créez des visuels professionnels en quelques secondes
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-secondary/50 shadow-card">
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-                <CreditCard className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <h3 className="font-semibold mb-2">Revenus instantanés</h3>
-              <p className="text-sm text-muted-foreground">
-                Recevez vos paiements en temps réel sur votre compte
-              </p>
-            </div>
+          {/* CTA for each mode */}
+          <div className="text-center mt-10">
+            <Button size="lg" asChild>
+              <Link to={activeTab === "client" ? "/signup-client" : "/signup-organizer"}>
+                {activeTab === "client" ? "Découvrir les événements" : "Créer mon événement"}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
