@@ -34,7 +34,7 @@ const Landing = () => {
     {
       icon: Sparkles,
       title: "Spark Studio",
-      description: "Créez des visuels professionnels en quelques secondes"
+      description: "Avec Spark Studio créez des visuels professionnels en quelques secondes avec votre agent IA designer, ou importez votre propre visuel !"
     },
     {
       icon: CreditCard,
