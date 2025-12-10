@@ -29,7 +29,7 @@ const Landing = () => {
     {
       icon: Brain,
       title: "IA Analytics",
-      description: "Une IA entraînée sur les données de centaines d'organisateurs pour prédire et optimiser vos événements"
+      description: "Une IA entraînée sur les données de centaines d'organisateurs afin d'avoir une parfaite compréhension des tendances du marché et d'avoir une prédiction d'affluence"
     },
     {
       icon: Sparkles,
