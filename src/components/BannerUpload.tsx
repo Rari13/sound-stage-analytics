@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Upload, X, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Sparkles, Loader2, Lock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SoundStudioAI } from "./SoundStudioAI";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useNavigate } from "react-router-dom";
 
 interface BannerUploadProps {
   value?: string;
@@ -17,6 +19,8 @@ export function BannerUpload({ value, onChange, organizerId, description }: Bann
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(value || null);
   const { toast } = useToast();
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
+  const navigate = useNavigate();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,10 +144,37 @@ export function BannerUpload({ value, onChange, organizerId, description }: Bann
           </TabsContent>
 
           <TabsContent value="ai" className="animate-fade-in">
-            <SoundStudioAI 
-              organizerId={organizerId} 
-              onComplete={handleAIComplete} 
-            />
+            {isPremium ? (
+              <SoundStudioAI 
+                organizerId={organizerId} 
+                onComplete={handleAIComplete} 
+              />
+            ) : (
+              <div className="aspect-video rounded-xl border-2 border-dashed border-accent/30 bg-accent/5 flex flex-col items-center justify-center gap-4 p-6">
+                <div className="relative">
+                  <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                    <Sparkles className="h-8 w-8 text-accent" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full p-1">
+                    <Crown className="h-3 w-3" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold">Spark Studio AI</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Générez des affiches professionnelles avec l'IA
+                  </p>
+                </div>
+                <Button 
+                  variant="accent" 
+                  onClick={() => navigate("/orga/subscription")}
+                  className="mt-2"
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  Débloquer avec Premium
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       )}
