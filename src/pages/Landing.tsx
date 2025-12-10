@@ -39,7 +39,7 @@ const Landing = () => {
     {
       icon: CreditCard,
       title: "Revenus instantanés",
-      description: "Recevez vos paiements en temps réel sur votre compte"
+      description: "Recevez vos paiements en instantané sur votre compte bancaire, Spark est la solution unique pour fluidifier votre trésorerie et payer vos prestataires"
     }
   ];
 
