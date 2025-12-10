@@ -25,6 +25,7 @@ import EventDetails from "./pages/EventDetails";
 import OrganizerAnalytics from "./pages/OrganizerAnalytics";
 import OrganizerSubscription from "./pages/OrganizerSubscription";
 import OrganizerRefunds from "./pages/OrganizerRefunds";
+import OrganizerPromoCodes from "./pages/OrganizerPromoCodes";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
 import GroupPayJoin from "./pages/GroupPayJoin";
@@ -150,6 +151,14 @@ const App = () => (
             <OrganizerLayout>
               <OrganizerRefunds />
             </OrganizerLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orga/promo-codes" 
+        element={
+          <ProtectedRoute requireRole="organizer">
+            <OrganizerPromoCodes />
           </ProtectedRoute>
         } 
       />

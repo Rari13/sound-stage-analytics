@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Users, MapPin, Loader2, Plus, RotateCcw, ArrowRight } from "lucide-react";
+import { Calendar, DollarSign, Users, MapPin, Loader2, Plus, RotateCcw, ArrowRight, Ticket } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -222,6 +222,18 @@ export default function OrganizerHome() {
           </Button>
         </div>
       )}
+
+      {/* Promo Codes Quick Access */}
+      <div 
+        className="bg-primary/5 border border-primary/20 p-3 rounded-xl flex items-center justify-between cursor-pointer hover:bg-primary/10 transition-colors"
+        onClick={() => navigate("/orga/promo-codes")}
+      >
+        <div className="flex items-center gap-3">
+          <Ticket className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium">Codes Promo</span>
+        </div>
+        <ArrowRight className="h-4 w-4 text-primary/60" />
+      </div>
 
       {/* Events */}
       <div className="space-y-3">
