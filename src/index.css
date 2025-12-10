@@ -61,6 +61,13 @@
     --shadow-strong: 0 -10px 40px rgba(0, 0, 0, 0.05);
     --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
     --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.08);
+
+    /* Neon Electric Blue Effects */
+    --neon-blue: 217 91% 60%;
+    --neon-glow-sm: 0 0 10px hsl(217 91% 60% / 0.5), 0 0 20px hsl(217 91% 60% / 0.3);
+    --neon-glow-md: 0 0 15px hsl(217 91% 60% / 0.6), 0 0 30px hsl(217 91% 60% / 0.4), 0 0 45px hsl(217 91% 60% / 0.2);
+    --neon-glow-lg: 0 0 20px hsl(217 91% 60% / 0.7), 0 0 40px hsl(217 91% 60% / 0.5), 0 0 60px hsl(217 91% 60% / 0.3), 0 0 80px hsl(217 91% 60% / 0.1);
+    --neon-text-glow: 0 0 7px hsl(217 91% 60% / 0.8), 0 0 14px hsl(217 91% 60% / 0.6), 0 0 21px hsl(217 91% 60% / 0.4);
   }
 }
 
@@ -118,6 +125,29 @@
   }
   .shadow-card-hover {
     box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Neon Electric Blue Utilities */
+  .neon-glow-sm {
+    box-shadow: var(--neon-glow-sm);
+  }
+  .neon-glow-md {
+    box-shadow: var(--neon-glow-md);
+  }
+  .neon-glow-lg {
+    box-shadow: var(--neon-glow-lg);
+  }
+  .neon-text {
+    text-shadow: var(--neon-text-glow);
+    color: hsl(var(--neon-blue));
+  }
+  .neon-border {
+    border: 1px solid hsl(var(--neon-blue));
+    box-shadow: var(--neon-glow-sm), inset 0 0 10px hsl(217 91% 60% / 0.1);
+  }
+  .neon-border-strong {
+    border: 2px solid hsl(var(--neon-blue));
+    box-shadow: var(--neon-glow-md), inset 0 0 15px hsl(217 91% 60% / 0.15);
   }
 }
 
@@ -190,6 +220,37 @@
 
   .animate-pulse-ring {
     animation: pulse-ring 0.6s ease-out;
+  }
+
+  /* Neon pulse animation */
+  @keyframes neon-pulse {
+    0%, 100% { 
+      box-shadow: var(--neon-glow-sm);
+      opacity: 1;
+    }
+    50% { 
+      box-shadow: var(--neon-glow-lg);
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+      box-shadow: var(--neon-glow-md);
+      opacity: 1;
+    }
+    20%, 24%, 55% {
+      box-shadow: none;
+      opacity: 0.8;
+    }
+  }
+
+  .animate-neon-pulse {
+    animation: neon-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-neon-flicker {
+    animation: neon-flicker 3s ease-in-out infinite;
   }
 
   @keyframes check-in {
