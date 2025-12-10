@@ -7,8 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2, Link2, Copy, ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2, Link2, Copy, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { QRScanner } from "@/components/QRScanner";
 
 export default function OrganizerScan() {
@@ -27,6 +26,8 @@ export default function OrganizerScan() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanLinks, setScanLinks] = useState<any[]>([]);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
+  const [showLinks, setShowLinks] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -36,7 +37,6 @@ export default function OrganizerScan() {
   const loadOrganizerData = async () => {
     if (!user) return;
 
-    // Get organizer
     const { data: orgData } = await supabase
       .from('organizers')
       .select('id')
@@ -46,7 +46,6 @@ export default function OrganizerScan() {
     if (!orgData) return;
     setOrganizerId(orgData.id);
 
-    // Load devices
     const { data: devicesData } = await supabase
       .from('scan_devices')
       .select('*')
@@ -55,7 +54,6 @@ export default function OrganizerScan() {
 
     setDevices(devicesData || []);
 
-    // Load events (today and future)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -69,7 +67,6 @@ export default function OrganizerScan() {
 
     setEvents(eventsData || []);
 
-    // Load active scan links
     const { data: linksData } = await supabase
       .from('scan_links')
       .select(`*, events:event_id (title)`)
@@ -84,7 +81,7 @@ export default function OrganizerScan() {
   const createDevice = async () => {
     if (!organizerId) return;
 
-    const deviceName = prompt("Nom de l'appareil de scan :");
+    const deviceName = prompt("Nom de l'appareil :");
     if (!deviceName) return;
 
     setLoading(true);
@@ -99,53 +96,34 @@ export default function OrganizerScan() {
       });
 
     if (error) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({
-        title: "Appareil créé",
-        description: `Clé: ${deviceKey}`,
-      });
+      toast({ title: "Appareil créé" });
       await loadOrganizerData();
     }
     setLoading(false);
   };
 
   const deleteDevice = async (deviceId: string, deviceName: string) => {
-    if (!confirm(`Supprimer l'appareil "${deviceName}" ?`)) return;
+    if (!confirm(`Supprimer "${deviceName}" ?`)) return;
     
-    const { error } = await supabase
-      .from('scan_devices')
-      .delete()
-      .eq('id', deviceId);
+    const { error } = await supabase.from('scan_devices').delete().eq('id', deviceId);
 
     if (error) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Appareil supprimé" });
+      toast({ title: "Supprimé" });
       await loadOrganizerData();
     }
   };
 
   const generateScanLink = async () => {
     if (!selectedEvent || !selectedDevice || !organizerId) {
-      toast({
-        title: "Sélectionnez un événement et un appareil",
-        variant: "destructive",
-      });
+      toast({ title: "Sélectionnez un événement et un appareil", variant: "destructive" });
       return;
     }
 
     setGeneratingLink(true);
-
-    // Create link that expires in 24 hours
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -161,18 +139,11 @@ export default function OrganizerScan() {
       .single();
 
     if (error) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       const link = `${window.location.origin}/scan/${data.token}`;
       await navigator.clipboard.writeText(link);
-      toast({
-        title: "Lien créé et copié !",
-        description: "Valide 24h. Partagez-le avec votre équipe.",
-      });
+      toast({ title: "Lien copié !", description: "Valide 24h" });
       await loadOrganizerData();
     }
     setGeneratingLink(false);
@@ -181,15 +152,11 @@ export default function OrganizerScan() {
   const copyLink = async (token: string) => {
     const link = `${window.location.origin}/scan/${token}`;
     await navigator.clipboard.writeText(link);
-    toast({ title: "Lien copié !" });
+    toast({ title: "Copié !" });
   };
 
   const deactivateLink = async (linkId: string) => {
-    await supabase
-      .from('scan_links')
-      .update({ is_active: false })
-      .eq('id', linkId);
-    
+    await supabase.from('scan_links').update({ is_active: false }).eq('id', linkId);
     toast({ title: "Lien désactivé" });
     await loadOrganizerData();
   };
@@ -209,17 +176,10 @@ export default function OrganizerScan() {
       });
 
     if (error) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       setSessionActive(true);
-      toast({
-        title: "Session démarrée",
-        description: "Vous pouvez maintenant scanner des billets",
-      });
+      toast({ title: "Session démarrée" });
     }
     setLoading(false);
   };
@@ -241,27 +201,15 @@ export default function OrganizerScan() {
 
     if (error) {
       setScanResult({ result: 'ERROR', message: error.message });
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
     } else {
       const result = data as any;
       setScanResult(result);
       
       if (result?.result === 'OK') {
         setScannedCount(prev => prev + 1);
-        toast({
-          title: "✅ Billet valide",
-          description: "Accès autorisé",
-        });
+        toast({ title: "✅ Billet valide" });
       } else {
-        toast({
-          title: "❌ Billet refusé",
-          description: getErrorMessage(result?.result || 'ERROR'),
-          variant: "destructive",
-        });
+        toast({ title: "❌ Refusé", description: getErrorMessage(result?.result || 'ERROR'), variant: "destructive" });
       }
     }
     setLoading(false);
@@ -270,12 +218,12 @@ export default function OrganizerScan() {
 
   const getErrorMessage = (result: string) => {
     const messages: Record<string, string> = {
-      'ALREADY_USED': 'Ce billet a déjà été scanné',
-      'NOT_FOUND': 'Billet introuvable',
-      'WRONG_EVENT': 'Ce billet n\'est pas pour cet événement',
-      'REVOKED': 'Billet révoqué',
-      'EXPIRED': 'Billet expiré',
-      'ERROR': 'Erreur de validation',
+      'ALREADY_USED': 'Déjà scanné',
+      'NOT_FOUND': 'Introuvable',
+      'WRONG_EVENT': 'Mauvais événement',
+      'REVOKED': 'Révoqué',
+      'EXPIRED': 'Expiré',
+      'ERROR': 'Erreur',
     };
     return messages[result] || result;
   };
@@ -286,231 +234,241 @@ export default function OrganizerScan() {
     await validateTicket(manualCode.trim());
   };
 
+  // Active session view - full screen mobile optimized
+  if (sessionActive) {
+    return (
+      <div className="fixed inset-0 bg-background z-50 flex flex-col">
+        {/* Header */}
+        <div className="bg-primary text-primary-foreground p-4 text-center safe-area-top">
+          <p className="font-bold text-lg">Session active</p>
+          <p className="text-sm opacity-90">{scannedCount} billet{scannedCount !== 1 ? 's' : ''} scanné{scannedCount !== 1 ? 's' : ''}</p>
+        </div>
+
+        {/* Result display */}
+        {scanResult && (
+          <div className={`p-6 text-center ${
+            scanResult.result === 'OK' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <div className="flex items-center justify-center gap-3">
+              {scanResult.result === 'OK' ? (
+                <CheckCircle2 className="h-12 w-12" />
+              ) : scanResult.result === 'ALREADY_USED' ? (
+                <AlertCircle className="h-12 w-12" />
+              ) : (
+                <XCircle className="h-12 w-12" />
+              )}
+              <span className="text-2xl font-bold">
+                {scanResult.result === 'OK' ? 'VALIDE ✓' : getErrorMessage(scanResult.result)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col p-4 gap-4 overflow-auto">
+          {showScanner ? (
+            <div className="flex-1">
+              <QRScanner
+                onScanSuccess={(code) => {
+                  setShowScanner(false);
+                  validateTicket(code);
+                }}
+                onClose={() => setShowScanner(false)}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Camera button - large and centered */}
+              <Button
+                onClick={() => setShowScanner(true)}
+                size="lg"
+                className="h-20 text-xl font-bold"
+              >
+                <Camera className="h-8 w-8 mr-3" />
+                Scanner
+              </Button>
+
+              {/* Manual input */}
+              <form onSubmit={handleManualScan} className="space-y-3">
+                <Input
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder="Code manuel..."
+                  className="h-14 text-lg text-center"
+                />
+                <Button 
+                  type="submit" 
+                  variant="secondary"
+                  className="w-full h-12" 
+                  disabled={loading || !manualCode.trim()}
+                >
+                  Valider
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t safe-area-bottom">
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => setSessionActive(false)}
+          >
+            Terminer la session
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Setup view
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-24">
       <div>
-        <h1 className="text-2xl font-bold mb-1">Scanner</h1>
-        <p className="text-sm text-muted-foreground">Validation des billets en temps réel</p>
+        <h1 className="text-xl font-bold">Scanner</h1>
+        <p className="text-sm text-muted-foreground">Validation des billets</p>
       </div>
 
-        {/* Devices Section */}
-        <Card className="p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Smartphone className="h-5 w-5" />
-              Appareils de scan
-            </h2>
-            <Button onClick={createDevice} disabled={loading} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvel appareil
+      {/* Quick start */}
+      <Card className="p-4 space-y-4">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Scan className="h-4 w-4" />
+          Démarrer une session
+        </h2>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Événement</Label>
+            <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Sélectionner..." />
+              </SelectTrigger>
+              <SelectContent>
+                {events.map(event => (
+                  <SelectItem key={event.id} value={event.id}>
+                    {event.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-xs">Appareil</Label>
+            <Select value={selectedDevice} onValueChange={setSelectedDevice}>
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Sélectionner..." />
+              </SelectTrigger>
+              <SelectContent>
+                {devices.map(device => (
+                  <SelectItem key={device.id} value={device.id}>
+                    {device.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={startSession} 
+              disabled={!selectedEvent || !selectedDevice || loading}
+              className="flex-1 h-12"
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              Scanner ici
+            </Button>
+            <Button 
+              onClick={generateScanLink} 
+              disabled={!selectedEvent || !selectedDevice || generatingLink}
+              variant="outline"
+              className="h-12"
+            >
+              <Link2 className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Devices - collapsible */}
+      <Card className="overflow-hidden">
+        <button 
+          className="w-full p-4 flex items-center justify-between text-left"
+          onClick={() => setShowDevices(!showDevices)}
+        >
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            <span className="font-semibold">Appareils ({devices.length})</span>
+          </div>
+          {showDevices ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        
+        {showDevices && (
+          <div className="px-4 pb-4 space-y-2">
+            {devices.map(device => (
+              <div key={device.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium truncate">{device.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => deleteDevice(device.id, device.name)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button onClick={createDevice} variant="outline" size="sm" className="w-full mt-2">
+              <Plus className="h-4 w-4 mr-1" />
+              Ajouter
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {/* Active links - collapsible */}
+      {scanLinks.length > 0 && (
+        <Card className="overflow-hidden">
+          <button 
+            className="w-full p-4 flex items-center justify-between text-left"
+            onClick={() => setShowLinks(!showLinks)}
+          >
+            <div className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              <span className="font-semibold">Liens actifs ({scanLinks.length})</span>
+            </div>
+            {showLinks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
           
-          {devices.length > 0 ? (
-            <div className="space-y-2">
-              {devices.map(device => (
-                <div key={device.id} className="p-3 border rounded-lg flex justify-between items-center gap-2">
+          {showLinks && (
+            <div className="px-4 pb-4 space-y-2">
+              {scanLinks.map(link => (
+                <div key={link.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <span className="font-medium block truncate">{device.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {device.last_seen ? `Vu le ${new Date(device.last_seen).toLocaleString()}` : 'Jamais utilisé'}
-                    </span>
+                    <p className="text-sm font-medium truncate">{link.events?.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Expire {new Date(link.expires_at).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => deleteDevice(device.id, device.name)}
-                  >
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(link.token)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(`/scan/${link.token}`, '_blank')}>
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deactivateLink(link.id)}>
+                    <XCircle className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              Aucun appareil configuré
-            </p>
           )}
         </Card>
-
-        {/* Session Section */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Scan className="h-5 w-5" />
-            Session de scan
-          </h2>
-
-          {!sessionActive ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Événement</Label>
-                <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un événement" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events.map(event => (
-                      <SelectItem key={event.id} value={event.id}>
-                        {event.title} - {new Date(event.starts_at).toLocaleDateString()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Appareil</Label>
-                <Select value={selectedDevice} onValueChange={setSelectedDevice}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un appareil" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {devices.map(device => (
-                      <SelectItem key={device.id} value={device.id}>
-                        {device.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={startSession} 
-                  disabled={!selectedEvent || !selectedDevice || loading}
-                  className="flex-1"
-                  variant="accent"
-                  size="lg"
-                >
-                  Démarrer ici
-                </Button>
-                <Button 
-                  onClick={generateScanLink} 
-                  disabled={!selectedEvent || !selectedDevice || generatingLink}
-                  variant="outline"
-                  size="lg"
-                >
-                  <Link2 className="h-4 w-4 mr-2" />
-                  {generatingLink ? "..." : "Créer un lien"}
-                </Button>
-              </div>
-
-              {/* Active Links */}
-              {scanLinks.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <Label className="text-sm text-muted-foreground">Liens actifs</Label>
-                  {scanLinks.map(link => (
-                    <div key={link.id} className="p-3 border rounded-lg flex items-center gap-2 bg-muted/30">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{link.events?.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Expire {new Date(link.expires_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => copyLink(link.token)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => window.open(`/scan/${link.token}`, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => deactivateLink(link.id)}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="bg-gradient-primary text-primary-foreground p-4 rounded-lg text-center">
-                <p className="text-lg font-bold">Session active</p>
-                <p className="text-sm">Billets scannés : {scannedCount}</p>
-              </div>
-
-              {!showScanner ? (
-                <>
-                  <Button
-                    onClick={() => setShowScanner(true)}
-                    variant="accent"
-                    size="lg"
-                    className="w-full mb-4"
-                  >
-                    <Camera className="h-5 w-5 mr-2" />
-                    Scanner avec la caméra
-                  </Button>
-
-                  <form onSubmit={handleManualScan} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Ou saisir manuellement</Label>
-                      <Input
-                        value={manualCode}
-                        onChange={(e) => setManualCode(e.target.value)}
-                        placeholder="Code QR du billet"
-                        className="h-14 text-lg"
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" size="lg" disabled={loading || !manualCode.trim()}>
-                      {loading ? "Validation..." : "Valider"}
-                    </Button>
-                  </form>
-                </>
-              ) : (
-                <QRScanner
-                  onScanSuccess={(code) => {
-                    setShowScanner(false);
-                    validateTicket(code);
-                  }}
-                  onClose={() => setShowScanner(false)}
-                />
-              )}
-
-              {scanResult && (
-                <Card className={`p-6 ${
-                  scanResult.result === 'OK' 
-                    ? 'bg-green-500/10 border-green-500' 
-                    : 'bg-red-500/10 border-red-500'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    {scanResult.result === 'OK' ? (
-                      <CheckCircle2 className="h-8 w-8 text-green-500" />
-                    ) : scanResult.result === 'ALREADY_USED' ? (
-                      <AlertCircle className="h-8 w-8 text-orange-500" />
-                    ) : (
-                      <XCircle className="h-8 w-8 text-red-500" />
-                    )}
-                    <div>
-                      <p className="font-bold text-lg">
-                        {scanResult.result === 'OK' ? 'Billet valide ✓' : getErrorMessage(scanResult.result)}
-                      </p>
-                      {scanResult.used_at && (
-                        <p className="text-sm text-muted-foreground">
-                          Utilisé le {new Date(scanResult.used_at).toLocaleString()}
-                      </p>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </div>
-          )}
-        </Card>
-      </div>
+      )}
+    </div>
   );
 }
