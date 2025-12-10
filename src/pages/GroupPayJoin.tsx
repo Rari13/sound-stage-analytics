@@ -115,7 +115,7 @@ export default function GroupPayJoin() {
   };
 
   const paidCount = participants.filter(p => p.status === "paid").length;
-  const myParticipant = participants.find(p => (p as any).originalEmail?.toLowerCase() === user?.email?.toLowerCase() || p.user_id === user?.id);
+  const myParticipant = participants.find(p => (p as any).isCurrentUser === true || p.user_id === user?.id);
   const isExpired = groupOrder && new Date(groupOrder.expires_at) < new Date();
   const isComplete = groupOrder?.status === "complete" || paidCount === participants.length;
 
@@ -218,7 +218,7 @@ export default function GroupPayJoin() {
               <div>
                 <p className="font-medium text-foreground">
                   {p.email}
-                  {((p as any).originalEmail?.toLowerCase() === user?.email?.toLowerCase() || p.user_id === user?.id) && (
+                  {((p as any).isCurrentUser === true || p.user_id === user?.id) && (
                     <span className="text-primary ml-2">(vous)</span>
                   )}
                 </p>

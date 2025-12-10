@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { clientSignupSchema } from "@/lib/validationSchemas";
 
 const SignupClient = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const SignupClient = () => {
     privacyAccepted: false,
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (user) {
@@ -34,20 +36,24 @@ const SignupClient = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas",
-        variant: "destructive",
+    // Validate with zod schema
+    const result = clientSignupSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const path = err.path.join(".");
+        fieldErrors[path] = err.message;
       });
-      return;
-    }
-
-    if (!formData.termsAccepted || !formData.privacyAccepted) {
+      setErrors(fieldErrors);
+      
+      // Show first error as toast
+      const firstError = result.error.errors[0];
       toast({
-        title: "Erreur",
-        description: "Vous devez accepter les conditions",
+        title: "Erreur de validation",
+        description: firstError.message,
         variant: "destructive",
       });
       return;
@@ -55,10 +61,10 @@ const SignupClient = () => {
 
     setLoading(true);
 
-    const { error } = await signUp(formData.email, formData.password, {
+    const { error } = await signUp(formData.email.trim(), formData.password, {
       role: 'client',
-      first_name: formData.firstName,
-      last_name: formData.lastName,
+      first_name: formData.firstName.trim(),
+      last_name: formData.lastName.trim(),
       terms_accepted: 'true',
       privacy_accepted: 'true',
     });
@@ -129,8 +135,12 @@ const SignupClient = () => {
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 required
-                className="h-11"
+                maxLength={100}
+                className={`h-11 ${errors.firstName ? 'border-destructive' : ''}`}
               />
+              {errors.firstName && (
+                <p className="text-xs text-destructive">{errors.firstName}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="lastName">Nom</Label>
@@ -140,8 +150,12 @@ const SignupClient = () => {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 required
-                className="h-11"
+                maxLength={100}
+                className={`h-11 ${errors.lastName ? 'border-destructive' : ''}`}
               />
+              {errors.lastName && (
+                <p className="text-xs text-destructive">{errors.lastName}</p>
+              )}
             </div>
           </div>
 
@@ -154,8 +168,12 @@ const SignupClient = () => {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
-              className="h-11"
+              maxLength={255}
+              className={`h-11 ${errors.email ? 'border-destructive' : ''}`}
             />
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -167,8 +185,13 @@ const SignupClient = () => {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
-              className="h-11"
+              maxLength={72}
+              className={`h-11 ${errors.password ? 'border-destructive' : ''}`}
             />
+            {errors.password && (
+              <p className="text-xs text-destructive">{errors.password}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Minimum 8 caractères</p>
           </div>
 
           <div className="space-y-2">
@@ -180,8 +203,12 @@ const SignupClient = () => {
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               required
-              className="h-11"
+              maxLength={72}
+              className={`h-11 ${errors.confirmPassword ? 'border-destructive' : ''}`}
             />
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+            )}
           </div>
 
           <div className="space-y-3 pt-2">
