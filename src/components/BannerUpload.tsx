@@ -31,8 +31,8 @@ export function BannerUpload({ value, onChange, organizerId, description }: Bann
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      toast({ title: "Fichier trop volumineux (Max 3Mo)", variant: "destructive" });
+    if (file.size > 6 * 1024 * 1024) {
+      toast({ title: "Fichier trop volumineux (Max 6Mo)", variant: "destructive" });
       return;
     }
 
@@ -124,7 +124,7 @@ export function BannerUpload({ value, onChange, organizerId, description }: Bann
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold">Cliquez pour importer</p>
-                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP • Max 3Mo</p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP • Max 6Mo</p>
                     </div>
                   </>
                 )}
