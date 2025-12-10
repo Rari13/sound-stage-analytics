@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Brain, Users, MousePointerClick, Lock, Loader2, TrendingUp, Sparkles, MapPin, BarChart3, Send, MessageCircle } from "lucide-react";
+import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, MapPin, BarChart3, Send, MessageCircle } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
+import { PremiumGate } from "@/components/PremiumGate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -25,10 +26,9 @@ interface ChatMessage {
 
 export default function OrganizerAnalytics() {
   const { user } = useAuth();
-  const { isPremium, organizerId, upgradeToPremium } = useSubscription();
+  const { isPremium, organizerId, loading: subscriptionLoading } = useSubscription();
   const [aiLoading, setAiLoading] = useState(false);
   const [audienceStats, setAudienceStats] = useState({ followers: 0, likes: 0, conversionRate: 0 });
-  const [upgrading, setUpgrading] = useState(false);
   const [selectedCity, setSelectedCity] = useState("");
   const [swipeChartData, setSwipeChartData] = useState<SwipeChartData[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -170,32 +170,29 @@ export default function OrganizerAnalytics() {
     await handleSendQuestion(`Analyse le potentiel du marché dans la ville de ${selectedCity}. Quelles sont les opportunités et les défis pour un organisateur d'événements ?`);
   };
 
-  const handleUpgrade = async () => {
-    setUpgrading(true);
-    const result = await upgradeToPremium();
-    if (result.success) {
-      toast.success("Abonnement Premium activé !");
-    } else {
-      toast.error(result.error || "Erreur lors de l'activation");
-    }
-    setUpgrading(false);
-  };
+  // Show loading state
+  if (subscriptionLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+      </div>
+    );
+  }
+
+  // Gate behind premium
+  if (!isPremium) {
+    return <PremiumGate feature="analytics" />;
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Intelligence</h1>
-        {!isPremium && (
-          <Button variant="accent" size="sm" onClick={handleUpgrade} disabled={upgrading}>
-            {upgrading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Premium
-          </Button>
-        )}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30">
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="text-xs font-medium text-accent">Premium</span>
+        </div>
       </div>
 
       {/* KPIs Audience */}
@@ -285,7 +282,7 @@ export default function OrganizerAnalytics() {
           <div className="flex gap-2 flex-wrap">
             <Button
               onClick={() => handleQuickAction("general-insights")}
-              disabled={aiLoading || !isPremium}
+              disabled={aiLoading}
               variant="outline"
               size="sm"
               className="text-xs"
@@ -295,7 +292,7 @@ export default function OrganizerAnalytics() {
             </Button>
             <Button
               onClick={() => handleQuickAction("demand-supply-analysis")}
-              disabled={aiLoading || !isPremium}
+              disabled={aiLoading}
               variant="outline"
               size="sm"
               className="text-xs"
@@ -347,10 +344,10 @@ export default function OrganizerAnalytics() {
           {/* Input Area */}
           <div className="flex gap-2">
             <Textarea
-              placeholder={isPremium ? "Posez votre question..." : "Premium requis"}
+              placeholder="Posez votre question..."
               value={userQuestion}
               onChange={(e) => setUserQuestion(e.target.value)}
-              disabled={!isPremium || aiLoading}
+              disabled={aiLoading}
               className="min-h-[44px] max-h-[100px] resize-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -361,7 +358,7 @@ export default function OrganizerAnalytics() {
             />
             <Button
               onClick={() => handleSendQuestion()}
-              disabled={aiLoading || !isPremium || !userQuestion.trim()}
+              disabled={aiLoading || !userQuestion.trim()}
               size="icon"
               className="shrink-0 h-[44px] w-[44px]"
             >
@@ -372,12 +369,6 @@ export default function OrganizerAnalytics() {
               )}
             </Button>
           </div>
-
-          {!isPremium && (
-            <p className="text-xs text-center text-muted-foreground">
-              Premium requis pour les analyses IA
-            </p>
-          )}
         </CardContent>
       </Card>
 
@@ -393,55 +384,38 @@ export default function OrganizerAnalytics() {
         </TabsContent>
 
         <TabsContent value="market" className="mt-4">
-          {isPremium ? (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <MapPin className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Analyse de marché</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Découvrez le potentiel d'une ville
-                  </p>
-                </div>
+          <Card className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <MapPin className="h-5 w-5" />
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: Paris, Lyon, Nancy..."
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="flex-1 px-4 py-2 rounded-lg border bg-background text-sm"
-                />
-                <Button
-                  onClick={handleMarketAnalysis}
-                  disabled={aiLoading || !selectedCity}
-                >
-                  {aiLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Analyser"
-                  )}
-                </Button>
+              <div>
+                <h3 className="font-semibold">Analyse de marché</h3>
+                <p className="text-sm text-muted-foreground">
+                  Découvrez le potentiel d'une ville
+                </p>
               </div>
-            </Card>
-          ) : (
-            <Card className="p-8 text-center">
-              <Lock className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">
-                Analyse de marché disponible en Premium
-              </p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Ex: Paris, Lyon, Nancy..."
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg border bg-background text-sm"
+              />
               <Button
-                variant="accent"
-                className="mt-4"
-                onClick={handleUpgrade}
-                disabled={upgrading}
+                onClick={handleMarketAnalysis}
+                disabled={aiLoading || !selectedCity}
               >
-                Passer Premium
+                {aiLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Analyser"
+                )}
               </Button>
-            </Card>
-          )}
+            </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

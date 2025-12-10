@@ -1,20 +1,21 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import OrganizerLayout from "@/layouts/OrganizerLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Percent, Euro, Calendar, Hash, Ticket } from "lucide-react";
+import { Plus, Trash2, Percent, Euro, Calendar, Hash, Ticket, BarChart3, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
 
 interface PromoCode {
   id: string;
@@ -158,13 +159,55 @@ const OrganizerPromoCodes = () => {
     },
   });
 
+  // Statistics calculations
+  const stats = useMemo(() => {
+    if (!promoCodes || promoCodes.length === 0) {
+      return {
+        totalCodes: 0,
+        activeCodes: 0,
+        totalUsage: 0,
+        topCodes: [],
+        usageByType: []
+      };
+    }
+
+    const activeCodes = promoCodes.filter(c => c.is_active && !isExpired(c.expires_at)).length;
+    const totalUsage = promoCodes.reduce((sum, c) => sum + c.usage_count, 0);
+    
+    // Top 5 codes by usage
+    const topCodes = [...promoCodes]
+      .sort((a, b) => b.usage_count - a.usage_count)
+      .slice(0, 5)
+      .map(c => ({
+        name: c.code.length > 8 ? c.code.substring(0, 8) + '...' : c.code,
+        utilisations: c.usage_count
+      }));
+
+    // Usage by discount type
+    const percentageCodes = promoCodes.filter(c => c.discount_type === 'percentage');
+    const fixedCodes = promoCodes.filter(c => c.discount_type === 'fixed');
+    
+    const usageByType = [
+      { name: 'Pourcentage', value: percentageCodes.reduce((s, c) => s + c.usage_count, 0), color: 'hsl(var(--primary))' },
+      { name: 'Montant fixe', value: fixedCodes.reduce((s, c) => s + c.usage_count, 0), color: 'hsl(var(--accent))' }
+    ].filter(t => t.value > 0);
+
+    return {
+      totalCodes: promoCodes.length,
+      activeCodes,
+      totalUsage,
+      topCodes,
+      usageByType
+    };
+  }, [promoCodes]);
+
   const getEventTitle = (eventId: string | null) => {
     if (!eventId) return "Tous les événements";
     const event = events?.find((e) => e.id === eventId);
     return event?.title || "Événement inconnu";
   };
 
-  const isExpired = (expiresAt: string | null) => {
+  function isExpired(expiresAt: string | null) {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
   };
@@ -302,6 +345,93 @@ const OrganizerPromoCodes = () => {
           </Dialog>
         </div>
 
+        {/* Statistics Section */}
+        {promoCodes && promoCodes.length > 0 && (
+          <div className="space-y-4">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="p-3 text-center">
+                <Ticket className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold">{stats.totalCodes}</p>
+                <p className="text-[10px] text-muted-foreground">Codes créés</p>
+              </Card>
+              <Card className="p-3 text-center border-green-500/20 bg-green-500/5">
+                <TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                <p className="text-xl font-bold">{stats.activeCodes}</p>
+                <p className="text-[10px] text-muted-foreground">Actifs</p>
+              </Card>
+              <Card className="p-3 text-center border-primary/20 bg-primary/5">
+                <Hash className="h-4 w-4 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold">{stats.totalUsage}</p>
+                <p className="text-[10px] text-muted-foreground">Utilisations</p>
+              </Card>
+            </div>
+
+            {/* Charts */}
+            {stats.topCodes.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    Top codes utilisés
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats.topCodes} layout="vertical" margin={{ left: 0, right: 16 }}>
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10 }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            fontSize: '11px'
+                          }}
+                        />
+                        <Bar dataKey="utilisations" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {stats.usageByType.length > 1 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Répartition par type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[120px] flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.usageByType}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={45}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {stats.usageByType.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Promo Codes List */}
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Chargement...</div>
         ) : promoCodes?.length === 0 ? (
@@ -318,6 +448,7 @@ const OrganizerPromoCodes = () => {
           </Card>
         ) : (
           <div className="space-y-3">
+            <h3 className="font-semibold text-sm">Tous les codes</h3>
             {promoCodes?.map((code) => (
               <Card key={code.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
