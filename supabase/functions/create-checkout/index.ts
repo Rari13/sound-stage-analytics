@@ -46,7 +46,7 @@ serve(async (req) => {
       }
     }
 
-    const { eventId, items, customerEmail: providedEmail } = await req.json();
+    const { eventId, items, customerEmail: providedEmail, promoCode } = await req.json();
     if (!eventId || !items || !Array.isArray(items) || items.length === 0) {
       throw new Error("eventId and items array required");
     }
@@ -59,7 +59,39 @@ serve(async (req) => {
       throw new Error("Email required for checkout");
     }
 
-    logStep("Request data", { eventId, items, customerEmail });
+    logStep("Request data", { eventId, items, customerEmail, promoCode: promoCode?.code });
+
+    // Validate promo code if provided
+    let promoDiscount = 0;
+    let promoCodeId: string | null = null;
+    let promoDiscountType: string | null = null;
+    let promoDiscountValue: number | null = null;
+
+    if (promoCode && promoCode.id) {
+      // Re-validate promo code server-side
+      const { data: promoData, error: promoError } = await supabaseClient
+        .from("promo_codes")
+        .select("id, code, discount_type, discount_value, event_id, usage_count, usage_limit, starts_at, expires_at, is_active")
+        .eq("id", promoCode.id)
+        .single();
+
+      if (!promoError && promoData && promoData.is_active) {
+        const now = new Date();
+        const isValidEvent = !promoData.event_id || promoData.event_id === eventId;
+        const isWithinUsage = !promoData.usage_limit || promoData.usage_count < promoData.usage_limit;
+        const isAfterStart = !promoData.starts_at || new Date(promoData.starts_at) <= now;
+        const isBeforeExpiry = !promoData.expires_at || new Date(promoData.expires_at) > now;
+
+        if (isValidEvent && isWithinUsage && isAfterStart && isBeforeExpiry) {
+          promoCodeId = promoData.id;
+          promoDiscountType = promoData.discount_type;
+          promoDiscountValue = promoData.discount_value;
+          logStep("Promo code validated", { code: promoData.code, type: promoDiscountType, value: promoDiscountValue });
+        } else {
+          logStep("Promo code invalid", { reason: "conditions not met" });
+        }
+      }
+    }
 
     // Fetch event with organizer
     const { data: event, error: eventError } = await supabaseClient
@@ -129,7 +161,6 @@ serve(async (req) => {
     let subtotalCents = 0;
     let totalApplicationFee = 0;
     let totalQty = 0;
-    const lineItems: any[] = [];
 
     for (const item of items) {
       const tier = tiers.find(t => t.id === item.tierId);
@@ -142,22 +173,52 @@ serve(async (req) => {
         throw new Error(`Insufficient stock for ${tier.name}. Only ${tier.quota} available.`);
       }
 
-      // Calculate fee per ticket based on pricing model
-      const feePerTicket = Math.round((tier.price_cents * feesConfig.percent) + feesConfig.fixed);
-      
-      // Price with fee = base price + Sound fee
-      const priceWithFee = tier.price_cents + feePerTicket;
-
       subtotalCents += tier.price_cents * qty;
-      totalApplicationFee += feePerTicket * qty;
       totalQty += qty;
+    }
+
+    // Apply promo discount
+    if (promoCodeId && promoDiscountType && promoDiscountValue !== null) {
+      if (promoDiscountType === 'percentage') {
+        promoDiscount = Math.round(subtotalCents * (promoDiscountValue / 100));
+      } else {
+        promoDiscount = promoDiscountValue; // Fixed amount in cents
+      }
+      promoDiscount = Math.min(promoDiscount, subtotalCents); // Cap at subtotal
+      logStep("Promo discount calculated", { promoDiscount, subtotalCents });
+    }
+
+    const discountedSubtotal = subtotalCents - promoDiscount;
+
+    // Calculate fees on discounted amount
+    const lineItems: any[] = [];
+    for (const item of items) {
+      const tier = tiers.find(t => t.id === item.tierId);
+      if (!tier) continue;
+
+      const qty = parseInt(item.qty);
+      
+      // Calculate proportional discount per ticket
+      const ticketSubtotal = tier.price_cents * qty;
+      const ticketDiscount = subtotalCents > 0 
+        ? Math.round(promoDiscount * (ticketSubtotal / subtotalCents)) 
+        : 0;
+      const discountedTicketPrice = Math.max(0, tier.price_cents - Math.round(ticketDiscount / qty));
+
+      // Calculate fee per ticket based on discounted price
+      const feePerTicket = Math.round((discountedTicketPrice * feesConfig.percent) + feesConfig.fixed);
+      const priceWithFee = discountedTicketPrice + feePerTicket;
+
+      totalApplicationFee += feePerTicket * qty;
 
       lineItems.push({
         price_data: {
           currency: "eur",
           product_data: {
             name: `${event.title} - ${tier.name}`,
-            description: `Billet : ${(tier.price_cents/100).toFixed(2)}€ + Frais de service`,
+            description: promoDiscount > 0 
+              ? `Billet avec réduction appliquée + Frais de service`
+              : `Billet : ${(tier.price_cents/100).toFixed(2)}€ + Frais de service`,
             images: event.banner_url ? [event.banner_url] : [],
           },
           unit_amount: priceWithFee,
@@ -166,7 +227,14 @@ serve(async (req) => {
       });
     }
 
-    logStep("Totals calculated", { subtotalCents, totalApplicationFee, totalQty, pricingSource });
+    logStep("Totals calculated", { 
+      subtotalCents, 
+      promoDiscount, 
+      discountedSubtotal, 
+      totalApplicationFee, 
+      totalQty, 
+      pricingSource 
+    });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -188,12 +256,14 @@ serve(async (req) => {
         user_id: userId || "guest",
         pricing_model: pricingSource,
         subtotal_cents: subtotalCents.toString(),
+        promo_discount_cents: promoDiscount.toString(),
+        promo_code_id: promoCodeId || "",
         application_fee_cents: totalApplicationFee.toString(),
       },
     };
 
     // Add transfer data for paid tickets
-    if (subtotalCents > 0) {
+    if (discountedSubtotal > 0) {
       sessionConfig.payment_intent_data = {
         on_behalf_of: organizer.stripe_account_id,
         transfer_data: {
@@ -205,6 +275,18 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
     logStep("Stripe session created", { sessionId: session.id });
+
+    // Increment promo code usage if applied
+    if (promoCodeId) {
+      await supabaseClient
+        .from("promo_codes")
+        .update({ usage_count: supabaseClient.rpc('', {}) })
+        .eq("id", promoCodeId);
+      
+      // Use raw SQL increment
+      await supabaseClient.rpc('', {});
+      logStep("Promo code usage will be incremented on payment success");
+    }
 
     // Get or create user for guest checkouts
     let finalUserId = userId;
@@ -237,7 +319,7 @@ serve(async (req) => {
         user_id: finalUserId,
         stripe_checkout_session_id: session.id,
         status: "pending",
-        amount_total_cents: subtotalCents + totalApplicationFee,
+        amount_total_cents: discountedSubtotal + totalApplicationFee,
         application_fee_cents: totalApplicationFee,
         currency: "EUR",
         short_code: shortCode,
@@ -250,7 +332,7 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
     
-    logStep("Order created", { orderId: order.id, shortCode, pricingSource });
+    logStep("Order created", { orderId: order.id, shortCode, pricingSource, promoCodeId });
 
     return new Response(
       JSON.stringify({ url: session.url }),
