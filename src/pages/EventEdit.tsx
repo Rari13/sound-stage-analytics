@@ -561,19 +561,19 @@ const EventEdit = () => {
               ))}
             </div>
 
-            <div className="flex flex-col gap-4 pt-4">
-              <div className="flex gap-4">
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate("/orga/home")}
-                >
-                  Annuler
-                </Button>
-              </div>
+            <div className="flex flex-col gap-3 pt-4">
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate("/orga/home")}
+              >
+                Annuler
+              </Button>
               
               {eventStatus === 'draft' && (
                 <Button 
