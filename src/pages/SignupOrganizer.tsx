@@ -9,6 +9,7 @@ import { Music } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { organizerSignupSchema } from "@/lib/validationSchemas";
 
 const SignupOrganizer = () => {
   const navigate = useNavigate();
@@ -26,23 +27,28 @@ const SignupOrganizer = () => {
     privacyAccepted: false,
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas",
-        variant: "destructive",
+    // Validate with zod schema
+    const result = organizerSignupSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const path = err.path.join(".");
+        fieldErrors[path] = err.message;
       });
-      return;
-    }
-
-    if (!formData.termsAccepted || !formData.privacyAccepted) {
+      setErrors(fieldErrors);
+      
+      // Show first error as toast
+      const firstError = result.error.errors[0];
       toast({
-        title: "Erreur",
-        description: "Vous devez accepter les conditions",
+        title: "Erreur de validation",
+        description: firstError.message,
         variant: "destructive",
       });
       return;
@@ -76,10 +82,10 @@ const SignupOrganizer = () => {
         .from('organizers')
         .insert({
           owner_user_id: userData.user.id,
-          name: formData.organizerName,
-          slug: formData.slug,
-          phone: formData.phone || null,
-          siret: formData.siret || null,
+          name: formData.organizerName.trim(),
+          slug: formData.slug.trim().toLowerCase(),
+          phone: formData.phone?.trim() || null,
+          siret: formData.siret?.trim() || null,
         });
 
       if (orgError) {
@@ -124,8 +130,12 @@ const SignupOrganizer = () => {
               value={formData.organizerName}
               onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
               required
-              className="h-11"
+              maxLength={100}
+              className={`h-11 ${errors.organizerName ? 'border-destructive' : ''}`}
             />
+            {errors.organizerName && (
+              <p className="text-xs text-destructive">{errors.organizerName}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -135,13 +145,17 @@ const SignupOrganizer = () => {
                 id="slug"
                 placeholder="mon-organisation"
                 value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase() })}
                 required
-                className="h-11"
+                maxLength={50}
+                className={`h-11 ${errors.slug ? 'border-destructive' : ''}`}
               />
               <p className="text-xs text-muted-foreground">
                 Votre URL : sparkevents.app/@{formData.slug || "votre-slug"}
               </p>
+              {errors.slug && (
+                <p className="text-xs text-destructive">{errors.slug}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Téléphone (optionnel)</Label>
@@ -151,8 +165,12 @@ const SignupOrganizer = () => {
                 placeholder="+33 6 12 34 56 78"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="h-11"
+                maxLength={20}
+                className={`h-11 ${errors.phone ? 'border-destructive' : ''}`}
               />
+              {errors.phone && (
+                <p className="text-xs text-destructive">{errors.phone}</p>
+              )}
             </div>
           </div>
 
@@ -163,11 +181,15 @@ const SignupOrganizer = () => {
               placeholder="123 456 789 00012"
               value={formData.siret}
               onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
-              className="h-11"
+              maxLength={17}
+              className={`h-11 ${errors.siret ? 'border-destructive' : ''}`}
             />
             <p className="text-xs text-muted-foreground">
               Vous pourrez l'ajouter plus tard
             </p>
+            {errors.siret && (
+              <p className="text-xs text-destructive">{errors.siret}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -179,8 +201,12 @@ const SignupOrganizer = () => {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
-              className="h-11"
+              maxLength={255}
+              className={`h-11 ${errors.email ? 'border-destructive' : ''}`}
             />
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -193,8 +219,12 @@ const SignupOrganizer = () => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                className="h-11"
+                maxLength={72}
+                className={`h-11 ${errors.password ? 'border-destructive' : ''}`}
               />
+              {errors.password && (
+                <p className="text-xs text-destructive">{errors.password}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmer</Label>
@@ -205,8 +235,12 @@ const SignupOrganizer = () => {
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
-                className="h-11"
+                maxLength={72}
+                className={`h-11 ${errors.confirmPassword ? 'border-destructive' : ''}`}
               />
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+              )}
             </div>
           </div>
 
