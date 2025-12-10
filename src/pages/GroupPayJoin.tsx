@@ -68,28 +68,27 @@ export default function GroupPayJoin() {
   const fetchGroupOrder = async () => {
     setLoading(true);
     
-    const { data: order, error } = await supabase
-      .from("group_orders")
-      .select("*, events(*)")
-      .eq("share_code", shareCode)
-      .maybeSingle();
+    try {
+      // Use secure edge function to fetch group order data
+      const { data, error } = await supabase.functions.invoke("get-group-order", {
+        body: { shareCode },
+      });
 
-    if (error || !order) {
-      toast.error("Groupe non trouvé");
+      if (error || !data?.groupOrder) {
+        toast.error("Groupe non trouvé");
+        navigate("/");
+        return;
+      }
+
+      setGroupOrder(data.groupOrder as any);
+      setParticipants(data.participants || []);
+    } catch (err) {
+      console.error("Error fetching group order:", err);
+      toast.error("Erreur lors du chargement");
       navigate("/");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setGroupOrder(order as any);
-
-    const { data: parts } = await supabase
-      .from("group_order_participants")
-      .select("*")
-      .eq("group_order_id", order.id)
-      .order("created_at");
-
-    setParticipants(parts || []);
-    setLoading(false);
   };
 
   const handlePayMyShare = async () => {
@@ -116,7 +115,7 @@ export default function GroupPayJoin() {
   };
 
   const paidCount = participants.filter(p => p.status === "paid").length;
-  const myParticipant = participants.find(p => p.email.toLowerCase() === user?.email?.toLowerCase() || p.user_id === user?.id);
+  const myParticipant = participants.find(p => (p as any).originalEmail?.toLowerCase() === user?.email?.toLowerCase() || p.user_id === user?.id);
   const isExpired = groupOrder && new Date(groupOrder.expires_at) < new Date();
   const isComplete = groupOrder?.status === "complete" || paidCount === participants.length;
 
@@ -219,7 +218,7 @@ export default function GroupPayJoin() {
               <div>
                 <p className="font-medium text-foreground">
                   {p.email}
-                  {p.email.toLowerCase() === user?.email?.toLowerCase() && (
+                  {((p as any).originalEmail?.toLowerCase() === user?.email?.toLowerCase() || p.user_id === user?.id) && (
                     <span className="text-primary ml-2">(vous)</span>
                   )}
                 </p>
