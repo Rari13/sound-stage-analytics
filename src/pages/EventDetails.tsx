@@ -3,13 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FloatingInput } from "@/components/ui/FloatingInput";
-import { Calendar, MapPin, ArrowLeft, Minus, Plus, Users, ArrowRight, Share2, Navigation } from "lucide-react";
+import { Calendar, MapPin, ArrowLeft, Minus, Plus, Users, ArrowRight, Share2, Navigation, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { GroupPayModal } from "@/components/GroupPayModal";
+import { CartDrawer } from "@/components/CartDrawer";
 
 interface Event {
   id: string;
@@ -35,6 +36,14 @@ interface PriceTier {
   hidden: boolean | null;
 }
 
+interface PromoCodeData {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  event_id: string | null;
+}
+
 const EventDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -48,6 +57,8 @@ const EventDetails = () => {
   const [guestEmail, setGuestEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [groupPayModalOpen, setGroupPayModalOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [pendingPromoCode, setPendingPromoCode] = useState<PromoCodeData | null>(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -78,6 +89,18 @@ const EventDetails = () => {
     setQuantities(p => ({ ...p, [id]: Math.max(0, Math.min(10, (p[id] || 0) + delta)) }));
   };
 
+  const updateQuantityDirect = (tierId: string, quantity: number) => {
+    if (quantity <= 0) {
+      setQuantities(p => {
+        const updated = { ...p };
+        delete updated[tierId];
+        return updated;
+      });
+    } else {
+      setQuantities(p => ({ ...p, [tierId]: Math.min(10, quantity) }));
+    }
+  };
+
   const totalTickets = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
   const totalAmount = priceTiers.reduce((sum, tier) => sum + (tier.price_cents * (quantities[tier.id] || 0)), 0);
 
@@ -90,7 +113,7 @@ const EventDetails = () => {
     return true;
   };
 
-  const processCheckout = async (email: string | null) => {
+  const processCheckout = async (email: string | null, promoCode: PromoCodeData | null = null) => {
     if (!email || !event) return;
     setCheckoutLoading(true);
     
@@ -111,17 +134,19 @@ const EventDetails = () => {
         if (error) throw error;
         if (data?.orderId) {
           setGuestEmailDialogOpen(false);
+          setCartOpen(false);
           navigate(`/payment-success?session_id=${data.orderId}`);
           toast.success("Réservation confirmée !");
         }
       } else {
         const { data, error } = await supabase.functions.invoke("create-checkout", {
-          body: { eventId: event.id, items, customerEmail: email },
+          body: { eventId: event.id, items, customerEmail: email, promoCode },
         });
         if (error) throw error;
         if (data?.url) {
           window.open(data.url, '_blank');
           setGuestEmailDialogOpen(false);
+          setCartOpen(false);
         }
       }
     } catch (error: any) {
@@ -131,24 +156,37 @@ const EventDetails = () => {
     }
   };
 
-  const handlePayment = (mode: 'full' | 'split') => {
-    if (totalTickets === 0) return toast.error("Sélectionnez un billet");
-    
-    if (mode === 'split') {
-      if (!user) {
-        toast.error("Connectez-vous pour utiliser Group Pay");
-        navigate(`/login?redirect=/events/${slug}`);
-        return;
-      }
-      setGroupPayModalOpen(true);
+  const handleOpenCart = () => {
+    if (totalTickets === 0) {
+      toast.error("Sélectionnez un billet");
       return;
     }
+    setCartOpen(true);
+  };
 
+  const handleCartCheckout = (promoCode: PromoCodeData | null, finalTotal: number) => {
+    setPendingPromoCode(promoCode);
+    
     if (!user) {
+      setCartOpen(false);
       setGuestEmailDialogOpen(true);
       return;
     }
-    processCheckout(user?.email || null);
+    processCheckout(user?.email || null, promoCode);
+  };
+
+  const handleGroupPay = () => {
+    if (totalTickets === 0) {
+      toast.error("Sélectionnez un billet");
+      return;
+    }
+    
+    if (!user) {
+      toast.error("Connectez-vous pour utiliser Group Pay");
+      navigate(`/login?redirect=/events/${slug}`);
+      return;
+    }
+    setGroupPayModalOpen(true);
   };
 
   // Get first selected tier for Group Pay
@@ -157,8 +195,21 @@ const EventDetails = () => {
 
   const handleGuestCheckout = () => {
     if (!validateEmail(guestEmail)) return;
-    processCheckout(guestEmail);
+    processCheckout(guestEmail, pendingPromoCode);
   };
+
+  // Prepare cart items for CartDrawer
+  const cartItems = Object.entries(quantities)
+    .filter(([_, qty]) => qty > 0)
+    .map(([tierId, qty]) => {
+      const tier = priceTiers.find(t => t.id === tierId);
+      return {
+        tierId,
+        tierName: tier?.name || '',
+        priceCents: tier?.price_cents || 0,
+        quantity: qty,
+      };
+    });
 
   if (loading) {
     return <div className="min-h-screen bg-background animate-pulse" />;
@@ -340,10 +391,11 @@ const EventDetails = () => {
           <div className="max-w-md mx-auto flex gap-3">
             <Button 
               className="flex-1 h-14 rounded-2xl font-bold text-lg shadow-medium animate-press"
-              onClick={() => handlePayment('full')}
+              onClick={handleOpenCart}
               disabled={checkoutLoading}
             >
-              {checkoutLoading ? "Chargement..." : `Payer ${(totalAmount / 100).toFixed(2)} €`}
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Panier ({totalTickets})
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 
@@ -352,7 +404,7 @@ const EventDetails = () => {
               <Button 
                 variant="outline"
                 className="h-14 w-14 rounded-2xl border-border bg-secondary animate-press"
-                onClick={() => handlePayment('split')}
+                onClick={handleGroupPay}
                 title="Diviser la note"
               >
                 <Users className="h-6 w-6" />
@@ -360,6 +412,20 @@ const EventDetails = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Cart Drawer */}
+      {event && (
+        <CartDrawer
+          open={cartOpen}
+          onOpenChange={setCartOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+          items={cartItems}
+          onUpdateQuantity={updateQuantityDirect}
+          onCheckout={handleCartCheckout}
+          checkoutLoading={checkoutLoading}
+        />
       )}
 
       {/* Guest Email Dialog */}
