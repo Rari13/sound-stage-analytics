@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Music, Loader2, Home } from "lucide-react";
+import { ArrowLeft, MapPin, Music, Loader2, Home, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,7 @@ const MUSIC_GENRES = [
 
 const ClientProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -276,6 +276,23 @@ const ClientProfile = () => {
         <Button onClick={handleSave} disabled={saving} className="w-full h-12 text-lg rounded-xl shadow-lg" size="lg">
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enregistrer"}
         </Button>
+
+        {/* Section Déconnexion */}
+        <Card className="border-destructive/20">
+          <CardContent className="pt-6">
+            <Button
+              variant="outline"
+              className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={async () => {
+                await signOut();
+                navigate("/");
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Se déconnecter
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
