@@ -218,6 +218,48 @@ export type Database = {
           },
         ]
       }
+      generated_flyers: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          organizer_id: string
+          prompt_used: string | null
+          style: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          organizer_id: string
+          prompt_used?: string | null
+          style?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          organizer_id?: string
+          prompt_used?: string | null
+          style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_flyers_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_flyers_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_order_participants: {
         Row: {
           amount_cents: number
