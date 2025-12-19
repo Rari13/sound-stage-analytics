@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,20 +19,6 @@ const generateTicketHash = async (serial: string, eventId: string): Promise<stri
   const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-const generateQRCode = async (token: string): Promise<string> => {
-  try {
-    return await QRCode.toDataURL(token, {
-      errorCorrectionLevel: 'H',
-      type: 'image/png',
-      width: 300,
-      margin: 2,
-    });
-  } catch (error) {
-    logStep("QR generation error", error);
-    throw error;
-  }
 };
 
 serve(async (req) => {
@@ -150,89 +134,19 @@ serve(async (req) => {
 
       logStep("Order updated and tickets created", { ticketCount: createdTickets.length });
 
-      // Generate QR codes for tickets
-      const ticketsWithQR = await Promise.all(
-        createdTickets.map(async (ticket) => ({
-          ...ticket,
-          qrDataUrl: await generateQRCode(ticket.qr_token),
-        }))
-      );
+      // Appel au moteur d'email centralisé (Design Midnight Speed)
+      try {
+        const { error: emailFunctionError } = await supabaseClient.functions.invoke('send-ticket-email', {
+          body: { orderId: order.id }
+        });
 
-      logStep("QR codes generated");
-
-      // Send email with all tickets
-      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-      
-      const ticketRows = ticketsWithQR.map(ticket => `
-        <tr>
-          <td style="padding: 15px; border-bottom: 1px solid #eee;">
-            <img src="${ticket.qrDataUrl}" alt="QR Code" style="width: 150px; height: 150px;" />
-          </td>
-          <td style="padding: 15px; border-bottom: 1px solid #eee;">
-            <strong>${ticket.qr_token}</strong>
-          </td>
-        </tr>
-      `).join('');
-
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Vos billets</title>
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            ${order.events?.banner_url ? `
-              <img src="${order.events.banner_url}" alt="Event banner" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 20px;" />
-            ` : ''}
-            
-            <h1 style="color: #1a1a1a; margin-bottom: 10px;">Confirmation de commande</h1>
-            
-            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <h2 style="margin: 0 0 10px 0; font-size: 20px;">${order.events?.title || 'Événement'}</h2>
-              <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(order.events?.starts_at).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p style="margin: 5px 0;"><strong>Lieu:</strong> ${order.events?.venue}, ${order.events?.city}</p>
-              <p style="margin: 5px 0;"><strong>Code commande:</strong> ${order.short_code}</p>
-            </div>
-
-            <h3 style="margin-top: 30px;">Vos billets (${ticketsWithQR.length})</h3>
-            <p>Présentez ces QR codes à l'entrée de l'événement :</p>
-            
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <thead>
-                <tr style="background: #1a1a1a; color: white;">
-                  <th style="padding: 15px; text-align: left;">QR Code</th>
-                  <th style="padding: 15px; text-align: left;">Numéro de billet</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${ticketRows}
-              </tbody>
-            </table>
-
-            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Important:</strong> Conservez cet email. Vous devrez présenter vos QR codes à l'entrée de l'événement.</p>
-            </div>
-
-            <p style="color: #666; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              Merci pour votre achat ! Si vous avez des questions, n'hésitez pas à nous contacter.
-            </p>
-          </body>
-        </html>
-      `;
-
-      const { error: emailError } = await resend.emails.send({
-        from: 'Billets <onboarding@resend.dev>',
-        to: [session.customer_details?.email || session.customer_email || ''],
-        subject: `Vos billets pour ${order.events?.title}`,
-        html: emailHtml,
-      });
-
-      if (emailError) {
-        logStep("Email error (non-blocking)", emailError);
-        // Don't throw - tickets are created, email is secondary
-      } else {
-        logStep("Email sent successfully");
+        if (emailFunctionError) {
+          logStep("Erreur envoi email (non-bloquant)", emailFunctionError);
+        } else {
+          logStep("Email envoyé via le moteur centralisé (Design Néon)");
+        }
+      } catch (emailErr) {
+        logStep("Exception envoi email (non-bloquant)", emailErr);
       }
     }
 
