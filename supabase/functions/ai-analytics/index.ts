@@ -175,6 +175,39 @@ Fournis une analyse structurée:
 4. **Recommandations stratégiques** - 3 actions concrètes pour mieux aligner offre/demande
 5. **Opportunités manquées** - Types d'événements que tu devrais envisager`;
 
+    } else if (type === "market-simulation" && city) {
+      // NEW: Market simulation with anonymized data
+      const { genre, targetDate, marketData } = await req.json().catch(() => ({}));
+      
+      console.log("Starting market simulation:", { city, genre, targetDate });
+
+      systemPrompt = `Tu es un expert en stratégie événementielle (Nightlife Analyst). Tu analyses les données du marché pour conseiller les organisateurs sur le potentiel d'un événement.
+
+IMPORTANT: Tu dois toujours répondre de manière concise et actionnable. Les données que tu reçois sont anonymisées (agrégées sur plusieurs organisateurs) pour respecter la confidentialité.`;
+
+      userPrompt = `Analyse le marché pour:
+- Ville: ${city}
+- Genre: ${genre || 'Non spécifié'}
+- Date prévue: ${targetDate || 'Non spécifiée'}
+
+Données de marché agrégées (anonymes):
+${JSON.stringify(marketData || [], null, 2)}
+
+${(!marketData || marketData.length === 0) ? 
+  `ATTENTION: Pas de données disponibles pour cette combinaison ville/genre. Cela peut signifier:
+  - Moins de 3 organisateurs ont créé des événements (règle d'anonymat)
+  - Cette combinaison n'a pas d'historique
+
+Donne quand même des conseils généraux basés sur tes connaissances du marché événementiel.` :
+  `Analyse ces tendances et fournis:
+1. Une évaluation du risque (marché saturé, opportunité, ou prudence)
+2. Des conseils sur le pricing basés sur les moyennes
+3. Le meilleur timing pour cette date
+4. 1 conseil tactique concret`
+}
+
+Réponds de manière concise et actionnable.`;
+
     } else if (type === "market-analysis" && city) {
       // Analyze market potential for a city
       const { data: clientProfiles } = await supabase
