@@ -1100,6 +1100,19 @@ export type Database = {
       }
     }
     Views: {
+      market_insights: {
+        Row: {
+          genre: string | null
+          mois: string | null
+          nb_evenements: number | null
+          nb_organisateurs: number | null
+          prix_moyen_marche: number | null
+          remplissage_moyen: number | null
+          total_volume_billets: number | null
+          ville: string | null
+        }
+        Relationships: []
+      }
       public_organizers_view: {
         Row: {
           avatar_url: string | null
@@ -1138,6 +1151,16 @@ export type Database = {
         Returns: string
       }
       generate_short_code: { Args: never; Returns: string }
+      get_market_trends: {
+        Args: { target_city: string; target_genre: string }
+        Returns: {
+          mois: string
+          prix_moyen: number
+          remplissage: number
+          trend_status: string
+          volume_billets: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
