@@ -155,27 +155,27 @@ export function SparkStudio({ organizerId, isPremium }: SparkStudioProps) {
             </div>
           </div>
 
-          {/* Generate Button - Electric Speed */}
-          <div className="electric-border rounded-2xl">
-            <Button 
-              onClick={handleGenerate} 
-              disabled={loading}
-              className="w-full py-6 text-lg bg-transparent hover:bg-transparent border-0 relative z-10"
-              size="lg"
-            >
+          {/* Generate Button - Circuit Néon */}
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="neon-circuit-btn w-full h-16 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="circuit-content" />
+            <div className="relative z-10 flex items-center justify-center gap-3 h-full">
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  <span className="text-neon">Création en cours...</span>
+                  <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+                  <span className="text-circuit">CALCUL EN COURS...</span>
                 </>
               ) : (
                 <>
-                  <Wand2 className="mr-2 h-5 w-5 text-cyan-400" />
-                  <span className="text-neon">Générer le Visuel</span>
+                  <Wand2 className="h-5 w-5 text-cyan-400" />
+                  <span className="text-circuit">Générer le Visuel</span>
                 </>
               )}
-            </Button>
-          </div>
+            </div>
+          </button>
 
           {/* Text Customization (only visible when image generated) */}
           {generatedImage && (

@@ -2,72 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 
-  MINIMALIST DESIGN SYSTEM
-  Philosophy: "Less is more" - Apple/Google inspired
-  Light, clean, with generous whitespace and electric blue accents
+/* SPARK DESIGN SYSTEM - "SPEED & DARKNESS" EDITION
+  Base: Noir Profond (#020204)
+  Accent: Cyan Électrique (#00f2ff)
 */
 
 @layer base {
   :root {
-    /* Fond : Blanc pur pour la clarté */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
+    /* --- COULEURS FONDAMENTALES (MODE SOMBRE FORCÉ) --- */
+    
+    /* Fond : Presque Noir pur avec une teinte bleutée imperceptible */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    /* Cartes : Blanc sur blanc avec ombres */
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
+    /* Cartes : Noir un peu plus clair pour se détacher du fond */
+    --card: 240 10% 5%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 13%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Primaire : Bleu électrique */
-    --primary: 217 91% 60%;
-    --primary-hover: 217 91% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* PRIMAIRE : LE CYAN ÉLECTRIQUE (SPEED) */
+    --primary: 190 100% 50%;
+    --primary-foreground: 240 5.9% 10%;
 
-    /* Secondaire : Gris très clair pour les surfaces d'appui */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 13% 13%;
+    /* SECONDAIRE : Bleu Nuit Profond */
+    --secondary: 240 100% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Accent: Bleu électrique vif pour CTAs */
-    --accent: 217 91% 60%;
-    --accent-hover: 217 91% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Muted (Textes grisés) */
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    /* Muted tones */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* Accent */
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Bordures : Très subtiles */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    /* Bordures */
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 190 100% 50%;
 
-    /* Radius: Coins très arrondis (Apple style) */
     --radius: 1rem;
 
     /* Success state */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-
-    /* Shadows for depth */
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.03);
-    --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.06);
-    --shadow-strong: 0 -10px 40px rgba(0, 0, 0, 0.05);
-    --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
-    --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.08);
-
-    /* Neon Electric Blue Effects */
-    --neon-blue: 217 91% 60%;
-    --neon-glow-sm: 0 0 10px hsl(217 91% 60% / 0.5), 0 0 20px hsl(217 91% 60% / 0.3);
-    --neon-glow-md: 0 0 15px hsl(217 91% 60% / 0.6), 0 0 30px hsl(217 91% 60% / 0.4), 0 0 45px hsl(217 91% 60% / 0.2);
-    --neon-glow-lg: 0 0 20px hsl(217 91% 60% / 0.7), 0 0 40px hsl(217 91% 60% / 0.5), 0 0 60px hsl(217 91% 60% / 0.3), 0 0 80px hsl(217 91% 60% / 0.1);
-    --neon-text-glow: 0 0 7px hsl(217 91% 60% / 0.8), 0 0 14px hsl(217 91% 60% / 0.6), 0 0 21px hsl(217 91% 60% / 0.4);
   }
 }
 
@@ -75,28 +59,28 @@
   * {
     @apply border-border;
   }
-
+  
   body {
     @apply bg-background text-foreground antialiased;
+    /* Fond subtil : Grille cybernétique très légère */
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.05) 0%, transparent 50%),
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    background-attachment: fixed;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography - Style éditorial (Gros, Gras, Serré) */
+  /* Typography - Style éditorial */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight text-foreground;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   }
 
-  h1 {
-    @apply text-2xl md:text-4xl;
-  }
-
-  h2 {
-    @apply text-xl md:text-2xl;
-  }
-
-  h3 {
-    @apply text-lg md:text-xl;
-  }
+  h1 { @apply text-2xl md:text-4xl; }
+  h2 { @apply text-xl md:text-2xl; }
+  h3 { @apply text-lg md:text-xl; }
 
   /* Mobile optimizations - 16px minimum for iOS */
   input, textarea, select, button {
@@ -109,46 +93,141 @@
   }
 }
 
-/* Shadow utilities */
 @layer utilities {
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-  .shadow-medium {
-    box-shadow: var(--shadow-medium);
-  }
-  .shadow-strong {
-    box-shadow: var(--shadow-strong);
-  }
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .shadow-card-hover {
-    box-shadow: var(--shadow-card-hover);
+  /* --- L'EFFET "CIRCUIT NÉON" (Haute Tension) --- */
+  .neon-circuit-btn {
+    position: relative;
+    background: transparent;
+    overflow: hidden;
+    border-radius: 16px;
+    z-index: 1;
+    transition: transform 0.1s ease;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
   }
 
-  /* Neon Electric Blue Utilities */
-  .neon-glow-sm {
-    box-shadow: var(--neon-glow-sm);
+  .neon-circuit-btn:active {
+    transform: scale(0.96);
   }
-  .neon-glow-md {
-    box-shadow: var(--neon-glow-md);
+
+  .neon-circuit-btn:hover {
+    box-shadow: 0 0 40px rgba(0, 242, 255, 0.5);
   }
-  .neon-glow-lg {
-    box-shadow: var(--neon-glow-lg);
+
+  /* Le Faisceau Rotatif */
+  .neon-circuit-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      transparent, 
+      transparent, 
+      transparent 60%, 
+      #00f2ff 100%
+    );
+    animation: rotate-circuit 3s linear infinite;
+    z-index: -2;
   }
-  .neon-text {
-    text-shadow: var(--neon-text-glow);
-    color: hsl(var(--neon-blue));
+
+  /* L'effet Gaz Néon (Halo) */
+  .neon-circuit-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      transparent, 
+      transparent, 
+      transparent 60%, 
+      #00f2ff 100%
+    );
+    animation: rotate-circuit 3s linear infinite;
+    filter: blur(20px);
+    z-index: -2;
   }
-  .neon-border {
-    border: 1px solid hsl(var(--neon-blue));
-    box-shadow: var(--neon-glow-sm), inset 0 0 10px hsl(217 91% 60% / 0.1);
+
+  /* Le Coeur Noir (Masque) */
+  .circuit-content {
+    position: absolute;
+    inset: 2px;
+    background: #020204;
+    border-radius: 14px;
+    z-index: -1;
   }
-  .neon-border-strong {
-    border: 2px solid hsl(var(--neon-blue));
-    box-shadow: var(--neon-glow-md), inset 0 0 15px hsl(217 91% 60% / 0.15);
+  
+  /* Texte Circuit */
+  .text-circuit {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);
+    letter-spacing: 0.1em;
+    font-weight: 800;
+    text-transform: uppercase;
   }
+
+  /* --- ANCIEN ELECTRIC BORDER (Compatibilité) --- */
+  .electric-border {
+    position: relative;
+    background: #000;
+    border-radius: 12px;
+    z-index: 0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+  }
+
+  .electric-border:hover {
+    box-shadow: 0 0 40px rgba(0, 242, 255, 0.5);
+    transform: scale(1.02);
+  }
+
+  .electric-border::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      transparent, 
+      transparent, 
+      transparent, 
+      #00f2ff,
+      #0066ff,
+      #ffffff
+    );
+    animation: rotate-circuit 2s linear infinite;
+    z-index: -2;
+  }
+
+  .electric-border::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: #050505;
+    border-radius: 10px;
+    z-index: -1;
+  }
+  
+  /* Texte Néon */
+  .text-neon {
+    color: #fff;
+    text-shadow: 0 0 15px rgba(0, 242, 255, 0.9);
+  }
+
+  /* Bordure Néon Statique */
+  .border-neon-subtle {
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
+  }
+}
+
+@keyframes rotate-circuit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Floating Label Input Styles */
@@ -176,7 +255,6 @@
     @apply peer-[:not(:placeholder-shown)]:top-3.5 peer-[:not(:placeholder-shown)]:text-xs;
   }
 
-  /* Validation states */
   .floating-input.valid {
     @apply border-success;
   }
@@ -204,72 +282,13 @@
     @apply active:scale-[0.98] transition-transform duration-150 ease-out;
   }
 
-  .animate-bounce-subtle {
-    animation: bounce-subtle 0.6s ease-out;
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes bounce-subtle {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
-    100% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
-  }
-
-  .animate-pulse-ring {
-    animation: pulse-ring 0.6s ease-out;
-  }
-
-  /* Neon pulse animation */
-  @keyframes neon-pulse {
-    0%, 100% { 
-      box-shadow: var(--neon-glow-sm);
-      opacity: 1;
-    }
-    50% { 
-      box-shadow: var(--neon-glow-lg);
-      opacity: 0.9;
-    }
-  }
-
-  @keyframes neon-flicker {
-    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-      box-shadow: var(--neon-glow-md);
-      opacity: 1;
-    }
-    20%, 24%, 55% {
-      box-shadow: none;
-      opacity: 0.8;
-    }
-  }
-
-  .animate-neon-pulse {
-    animation: neon-pulse 2s ease-in-out infinite;
-  }
-
-  .animate-neon-flicker {
-    animation: neon-flicker 3s ease-in-out infinite;
-  }
-
-  @keyframes check-in {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .animate-check {
-    animation: check-in 0.4s ease-out forwards;
-  }
-
-  @keyframes slide-up {
-    from { transform: translateY(100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  .animate-slide-up {
-    animation: slide-up 0.3s ease-out;
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
   }
 
   @keyframes fade-in {
@@ -279,6 +298,15 @@
 
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
   }
 
   /* Skeleton loading */
@@ -304,59 +332,4 @@
 .thumb-zone-bar {
   @apply fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border;
   @apply safe-bottom;
-}
-
-/* --- ELECTRIC SPEED EFFECT - Haute Tension --- */
-@layer utilities {
-  .electric-border {
-    position: relative;
-    background: #000;
-    border-radius: 12px;
-    z-index: 0;
-    overflow: hidden;
-    transition: all 0.2s ease;
-  }
-
-  .electric-border:hover {
-    box-shadow: 0 0 40px rgba(0, 242, 255, 0.6);
-    transform: scale(1.02);
-  }
-
-  .electric-border::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      transparent, 
-      transparent, 
-      transparent, 
-      #00f2ff,
-      #0066ff,
-      #ffffff
-    );
-    animation: electric-rotate 2s linear infinite;
-    z-index: -2;
-  }
-
-  .electric-border::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    background: #050505;
-    border-radius: 10px;
-    z-index: -1;
-  }
-  
-  .text-neon {
-    color: #fff;
-    text-shadow: 0 0 15px rgba(0, 242, 255, 0.9);
-  }
-}
-
-@keyframes electric-rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }

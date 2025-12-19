@@ -285,27 +285,31 @@ export function CartDrawer({
                 </div>
               </div>
 
-              {/* Checkout Button - Electric Speed */}
+              {/* Checkout Button - Circuit Néon */}
               <div className="px-6 pb-6 pt-2">
-                <div className="electric-border rounded-2xl">
-                  <Button
-                    className="w-full h-14 rounded-2xl font-bold text-lg bg-transparent hover:bg-transparent border-0 relative z-10"
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                  >
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
+                  className="neon-circuit-btn w-full h-16 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="circuit-content" />
+                  <div className="relative z-10 flex items-center justify-center gap-3 h-full">
                     {checkoutLoading ? (
                       <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        <span className="text-white">Traitement...</span>
+                        <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+                        <span className="text-circuit">CONNEXION BANCAIRE...</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-neon font-bold">PAYER {(total / 100).toFixed(2)} €</span>
-                        <ArrowRight className="ml-2 h-5 w-5 text-cyan-400" />
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs text-muted-foreground">Total à payer</span>
+                          <span className="text-circuit text-xl">{(total / 100).toFixed(2)} €</span>
+                        </div>
+                        <ArrowRight className="h-6 w-6 text-cyan-400 ml-auto" />
                       </>
                     )}
-                  </Button>
-                </div>
+                  </div>
+                </button>
               </div>
             </>
           )}
