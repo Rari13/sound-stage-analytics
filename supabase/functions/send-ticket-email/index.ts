@@ -2,14 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import QRCode from "https://esm.sh/qrcode@1.5.4";
 
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: any) => {
-  console.log(`[SEND-TICKET-EMAIL] ${step}`, details || "");
 };
 
 serve(async (req) => {
@@ -18,147 +13,124 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
-
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
     const { orderId } = await req.json();
-    if (!orderId) {
-      throw new Error("orderId required");
-    }
+    if (!orderId) throw new Error("orderId required");
 
-    logStep("Request data", { orderId });
-
-    // Fetch order with related data
+    // 1. Récupération des données
     const { data: order, error: orderError } = await supabaseClient
       .from("orders")
       .select(`
-        id,
-        short_code,
-        amount_total_cents,
-        user_id,
-        events (
-          title,
-          venue,
-          city,
-          starts_at,
-          banner_url
-        ),
-        tickets (
-          id,
-          qr_token,
-          status
-        )
+        id, short_code, amount_total_cents, user_id,
+        events (title, venue, city, starts_at, banner_url, slug),
+        tickets (id, qr_token, status)
       `)
       .eq("id", orderId)
       .single();
 
-    if (orderError || !order) {
-      throw new Error("Order not found");
-    }
+    if (orderError || !order) throw new Error("Order not found");
 
-    logStep("Order loaded", { orderId: order.id, ticketCount: order.tickets.length });
-
-    // Get user email
     const { data: { user }, error: userError } = await supabaseClient.auth.admin.getUserById(order.user_id);
-    if (userError || !user?.email) {
-      throw new Error("User not found");
-    }
+    if (userError || !user?.email) throw new Error("User email not found");
 
-    const customerEmail = user.email;
-    logStep("User email found", { email: customerEmail });
+    // 2. Génération QR Codes (Noir sur Blanc pour lisibilité max)
+    const ticketsWithQR = await Promise.all(order.tickets.map(async (ticket: any) => {
+      const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
+        errorCorrectionLevel: 'M',
+        width: 400,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      return { ...ticket, qrBase64: qrDataUrl.split(',')[1] };
+    }));
 
-    // Generate QR codes for each ticket
-    const ticketPromises = order.tickets.map(async (ticket: any) => {
-      try {
-        const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
-          errorCorrectionLevel: 'H',
-          width: 300,
-          margin: 2,
-          type: 'image/png',
-        });
-        return {
-          id: ticket.id,
-          qrCode: qrDataUrl.split(',')[1], // Get base64 part only
-        };
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logStep("QR Code generation error", { ticketId: ticket.id, error: errorMessage });
-        throw new Error(`Failed to generate QR code: ${errorMessage}`);
-      }
-    });
-
-    const ticketsWithQR = await Promise.all(ticketPromises);
-    logStep("QR codes generated", { count: ticketsWithQR.length });
-
-    // Create HTML email with QR codes
+    // 3. Le Template "Electric Speed Noir"
     const event = order.events as any;
-    const ticketHtml = ticketsWithQR.map((ticket, index) => `
-      <div style="margin: 20px 0; padding: 20px; border: 2px solid #e5e7eb; border-radius: 8px;">
-        <h3 style="margin: 0 0 10px 0;">Billet ${index + 1}</h3>
-        <img src="cid:qr${index}" alt="QR Code" style="width: 200px; height: 200px;" />
+    const eventDate = new Date(event.starts_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const eventTime = new Date(event.starts_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    const ticketsHtml = ticketsWithQR.map((ticket, index) => `
+      <div style="background: linear-gradient(145deg, #111111, #0a0a0a); border-radius: 16px; padding: 24px; margin: 16px 0; border: 1px solid #222; box-shadow: 0 8px 32px rgba(0, 102, 255, 0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span style="color: #00ccff; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">Accès Rapide</span>
+          <span style="color: #666; font-size: 12px;">Billet ${index + 1}/${ticketsWithQR.length}</span>
+        </div>
+        <div style="text-align: center; background: #ffffff; border-radius: 12px; padding: 20px;">
+          <img src="cid:qr${index}" alt="QR Code" style="width: 180px; height: 180px;" />
+        </div>
+        <div style="margin-top: 16px; text-align: center;">
+          <p style="color: #555; font-size: 11px; margin: 0; font-family: monospace;">ID: ${ticket.qr_token}</p>
+          <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;">
+            <div style="width: 8px; height: 8px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 8px #00ff88;"></div>
+            <span style="color: #00ff88; font-size: 12px;">Prêt à scanner</span>
+          </div>
+        </div>
       </div>
     `).join('');
 
     const emailHtml = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Vos billets - ${event.title}</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #1a1a1a; margin-bottom: 10px;">🎉 Réservation confirmée !</h1>
-            <p style="color: #666; font-size: 16px;">Vos billets pour ${event.title}</p>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Vos billets - ${event.title}</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; padding: 0;">
+          <!-- Header avec bannière -->
+          <div style="position: relative; overflow: hidden;">
+            ${event.banner_url 
+              ? `<img src="${event.banner_url}" alt="${event.title}" style="width: 100%; height: 200px; object-fit: cover;" />` 
+              : `<div style="width: 100%; height: 200px; background: linear-gradient(135deg, #0044cc 0%, #00ccff 100%); display: flex; align-items: center; justify-content: center;">
+                  <span style="color: white; font-size: 28px; font-weight: bold; letter-spacing: 4px;">SPARK EVENTS</span>
+                </div>`
+            }
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, #050505, transparent);"></div>
           </div>
           
-          ${event.banner_url ? `
-            <img src="${event.banner_url}" alt="${event.title}" style="width: 100%; border-radius: 8px; margin-bottom: 20px;" />
-          ` : ''}
+          <!-- Contenu principal -->
+          <div style="padding: 24px 20px; background: #050505;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px;">${event.title}</h1>
+              <p style="color: #00ccff; font-size: 14px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">${eventDate} • ${eventTime}</p>
+              <p style="color: #888; font-size: 13px; margin: 8px 0 0 0;">${event.venue}, ${event.city}</p>
+            </div>
+
+            ${ticketsHtml}
+
+            <div style="text-align: center; margin-top: 24px; padding: 16px; background: #111; border-radius: 12px; border: 1px solid #222;">
+              <p style="color: #666; font-size: 12px; margin: 0;">Réf. Commande <span style="color: #00ccff; font-family: monospace;">${order.short_code}</span></p>
+            </div>
+          </div>
           
-          <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="margin-top: 0; color: #1a1a1a;">Détails de l'événement</h2>
-            <p style="margin: 5px 0;"><strong>📅 Date :</strong> ${new Date(event.starts_at).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <p style="margin: 5px 0;"><strong>🕐 Heure :</strong> ${new Date(event.starts_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-            <p style="margin: 5px 0;"><strong>📍 Lieu :</strong> ${event.venue}, ${event.city}</p>
-            <p style="margin: 5px 0;"><strong>🎫 Nombre de billets :</strong> ${order.tickets.length}</p>
-            ${order.amount_total_cents > 0 ? `<p style="margin: 5px 0;"><strong>💰 Montant :</strong> ${(order.amount_total_cents / 100).toFixed(2)} €</p>` : '<p style="margin: 5px 0;"><strong>🆓 Entrée gratuite</strong></p>'}
-            <p style="margin: 5px 0;"><strong>🔢 Code de commande :</strong> ${order.short_code}</p>
+          <!-- Footer -->
+          <div style="padding: 20px; text-align: center; background: linear-gradient(to bottom, #050505, #0a0a0a);">
+            <p style="color: #555; font-size: 11px; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 2px;">Billetterie propulsée par SPARK</p>
+            <p style="color: #333; font-size: 10px; margin: 0;">Le système de paiement le plus rapide pour les organisateurs.</p>
           </div>
-
-          <h2 style="color: #1a1a1a;">Vos billets (QR Codes)</h2>
-          <p style="color: #666;">Présentez ces QR codes à l'entrée de l'événement :</p>
-          
-          ${ticketHtml}
-
-          <div style="margin-top: 30px; padding: 20px; background-color: #fef3c7; border-radius: 8px;">
-            <p style="margin: 0; color: #92400e;"><strong>⚠️ Important :</strong> Conservez cet email. Ces QR codes sont uniques et vous serviront d'accès à l'événement.</p>
-          </div>
-
-          <div style="margin-top: 30px; text-align: center; color: #999; font-size: 12px;">
-            <p>Cet email a été envoyé automatiquement suite à votre réservation.</p>
-          </div>
-        </body>
+        </div>
+      </body>
       </html>
     `;
 
-    // Prepare attachments for QR codes
+    // 4. Envoi
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    
+    // Pièces jointes (QR Code images)
     const attachments = ticketsWithQR.map((ticket, index) => ({
-      filename: `qr-code-${index + 1}.png`,
-      content: ticket.qrCode,
+      filename: `spark-ticket-${index + 1}.png`,
+      content: ticket.qrBase64,
       content_id: `qr${index}`,
       disposition: 'inline',
     }));
-
-    // Send email with Resend API
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
-    }
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -167,38 +139,29 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Billetterie <onboarding@resend.dev>",
-        to: [customerEmail],
-        subject: `Vos billets pour ${event.title}`,
+        from: "Spark Billets <onboarding@resend.dev>",
+        to: [user.email],
+        subject: `⚡ Billet : ${event.title}`,
         html: emailHtml,
         attachments: attachments,
       }),
     });
 
     if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      throw new Error(`Resend API error: ${errorText}`);
+      console.error("Resend Error:", await emailResponse.text());
+      throw new Error("Erreur lors de l'envoi du billet");
     }
 
-    const emailData = await emailResponse.json();
-    logStep("Email sent successfully", { emailId: emailData.id });
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
   } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    console.error("Error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

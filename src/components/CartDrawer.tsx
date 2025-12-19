@@ -285,25 +285,27 @@ export function CartDrawer({
                 </div>
               </div>
 
-              {/* Checkout Button */}
+              {/* Checkout Button - Electric Speed */}
               <div className="px-6 pb-6 pt-2">
-                <Button
-                  className="w-full h-14 rounded-2xl font-bold text-lg"
-                  onClick={handleCheckout}
-                  disabled={checkoutLoading}
-                >
-                  {checkoutLoading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Chargement...
-                    </>
-                  ) : (
-                    <>
-                      Payer {(total / 100).toFixed(2)} €
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
+                <div className="electric-border rounded-2xl">
+                  <Button
+                    className="w-full h-14 rounded-2xl font-bold text-lg bg-transparent hover:bg-transparent border-0 relative z-10"
+                    onClick={handleCheckout}
+                    disabled={checkoutLoading}
+                  >
+                    {checkoutLoading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        <span className="text-white">Traitement...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-neon font-bold">PAYER {(total / 100).toFixed(2)} €</span>
+                        <ArrowRight className="ml-2 h-5 w-5 text-cyan-400" />
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </>
           )}
