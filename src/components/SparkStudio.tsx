@@ -155,25 +155,27 @@ export function SparkStudio({ organizerId, isPremium }: SparkStudioProps) {
             </div>
           </div>
 
-          {/* Generate Button */}
-          <Button 
-            onClick={handleGenerate} 
-            disabled={loading}
-            className="w-full py-6 text-lg"
-            size="lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Création en cours...
-              </>
-            ) : (
-              <>
-                <Wand2 className="mr-2 h-5 w-5" />
-                Générer le Visuel
-              </>
-            )}
-          </Button>
+          {/* Generate Button - Electric Speed */}
+          <div className="electric-border rounded-2xl">
+            <Button 
+              onClick={handleGenerate} 
+              disabled={loading}
+              className="w-full py-6 text-lg bg-transparent hover:bg-transparent border-0 relative z-10"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <span className="text-neon">Création en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-5 w-5 text-cyan-400" />
+                  <span className="text-neon">Générer le Visuel</span>
+                </>
+              )}
+            </Button>
+          </div>
 
           {/* Text Customization (only visible when image generated) */}
           {generatedImage && (
