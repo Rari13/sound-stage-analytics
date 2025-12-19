@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, MapPin, BarChart3, Send, MessageCircle } from "lucide-react";
+import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, BarChart3, Send, MessageCircle } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
+import { MarketIntelligence } from "@/components/MarketIntelligence";
 import { PremiumGate } from "@/components/PremiumGate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -29,7 +30,6 @@ export default function OrganizerAnalytics() {
   const { isPremium, organizerId, loading: subscriptionLoading } = useSubscription();
   const [aiLoading, setAiLoading] = useState(false);
   const [audienceStats, setAudienceStats] = useState({ followers: 0, likes: 0, conversionRate: 0 });
-  const [selectedCity, setSelectedCity] = useState("");
   const [swipeChartData, setSwipeChartData] = useState<SwipeChartData[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [userQuestion, setUserQuestion] = useState("");
@@ -163,11 +163,6 @@ export default function OrganizerAnalytics() {
     } finally {
       setAiLoading(false);
     }
-  };
-
-  const handleMarketAnalysis = async () => {
-    if (!selectedCity) return;
-    await handleSendQuestion(`Analyse le potentiel du marché dans la ville de ${selectedCity}. Quelles sont les opportunités et les défis pour un organisateur d'événements ?`);
   };
 
   // Show loading state
@@ -384,38 +379,7 @@ export default function OrganizerAnalytics() {
         </TabsContent>
 
         <TabsContent value="market" className="mt-4">
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <MapPin className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Analyse de marché</h3>
-                <p className="text-sm text-muted-foreground">
-                  Découvrez le potentiel d'une ville
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Ex: Paris, Lyon, Nancy..."
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-lg border bg-background text-sm"
-              />
-              <Button
-                onClick={handleMarketAnalysis}
-                disabled={aiLoading || !selectedCity}
-              >
-                {aiLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Analyser"
-                )}
-              </Button>
-            </div>
-          </Card>
+          <MarketIntelligence organizerId={organizerId || ""} />
         </TabsContent>
       </Tabs>
     </div>
