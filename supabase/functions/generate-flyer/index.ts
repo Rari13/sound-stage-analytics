@@ -6,191 +6,159 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Style presets for professional results
+const STYLE_PROMPTS: Record<string, string> = {
+  techno: "Dark industrial techno aesthetic, neon green lasers, foggy warehouse atmosphere, glitch art style, brutalism architecture, dramatic lighting",
+  rap: "Luxury hip-hop aesthetic, gold chains textures, smoke effects, cash money colors, urban graffiti elements, trap night vibe, VIP club atmosphere",
+  classy: "Elegant gala dinner background, art deco patterns, gold and black marble, minimalist luxury, bokeh lights, champagne bubbles",
+  summer: "Ibiza beach party vibe, sunset gradients, palm tree silhouettes, vibrant orange and purple, tropical house style, ocean waves",
+  afro: "African festival colors, geometric kente patterns, vibrant yellows and reds, afrobeats energy, tribal masks silhouettes, sunset savanna",
+  electro: "Synthwave retro-futuristic aesthetic, neon pink and blue, grid patterns, 80s sci-fi, chrome reflections, laser beams"
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { action, prompt, messages, exchangeCount, maxExchanges, organizerId, logoBase64 } = await req.json();
-    
+    const { style, vibe, format, organizerId } = await req.json();
+
+    if (!organizerId) {
+      throw new Error("organizerId requis");
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("Clé API Lovable manquante");
     }
 
-    // ACTION: REFINE - AI converses to understand the user's vision
-    if (action === "refine") {
-      console.log("Refining user vision, exchange:", exchangeCount);
-      
-      const systemPrompt = `Tu es un directeur artistique expert en création d'affiches d'événements (concerts, festivals, soirées).
-      
-TON OBJECTIF : Comprendre PARFAITEMENT ce que l'utilisateur veut pour son affiche en ${maxExchanges} échanges maximum.
+    // 1. VÉRIFICATION DU QUOTA (Freemium)
+    const { data: sub } = await supabase
+      .from('organizer_subscriptions')
+      .select('plan_type')
+      .eq('organizer_id', organizerId)
+      .eq('status', 'active')
+      .single();
 
-RÈGLES :
-- Pose des questions précises et pertinentes pour cerner : le type d'événement, l'ambiance, les couleurs, le style visuel
-- Sois concis et conversationnel (max 2-3 phrases)
-- Quand tu as assez d'infos (type + ambiance + style minimum), réponds avec "READY:" suivi du prompt final en anglais
-- Si c'est l'échange ${maxExchanges}, tu DOIS être prêt et répondre avec "READY:"
+    const isPremium = sub?.plan_type === 'premium';
 
-EXEMPLES DE BONNES QUESTIONS :
-- "C'est quel genre de soirée ? Plutôt club, festival en plein air, concert intime ?"
-- "Tu veux une ambiance plutôt dark/underground ou festive/colorée ?"
-- "Des couleurs qui te parlent ? Néon, or et noir, pastel ?"
+    if (!isPremium) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from('generated_flyers')
+        .select('*', { count: 'exact', head: true })
+        .eq('organizer_id', organizerId)
+        .gte('created_at', oneDayAgo);
 
-FORMAT DE RÉPONSE QUAND PRÊT :
-READY: Professional event flyer for [type], [style] aesthetic, [colors], [specific elements], cinematic lighting, 8k quality, no text`;
-
-      const aiMessages = [
-        { role: "system", content: systemPrompt },
-        ...messages
-      ];
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: aiMessages,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AI error:", response.status, errorText);
-        throw new Error("Erreur de communication avec l'IA");
+      if (count && count >= 1) {
+        throw new Error("Limite atteinte (1 flyer/jour). Passez Premium pour l'illimité.");
       }
-
-      const data = await response.json();
-      const aiMessage = data.choices?.[0]?.message?.content || "";
-      
-      console.log("AI response:", aiMessage);
-
-      // Check if AI is ready to generate
-      if (aiMessage.includes("READY:")) {
-        const finalPrompt = aiMessage.split("READY:")[1]?.trim() || "";
-        return new Response(
-          JSON.stringify({ 
-            ready: true, 
-            message: "Parfait ! J'ai compris ta vision. Je génère ton affiche... 🎨",
-            finalPrompt 
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          ready: false, 
-          message: aiMessage 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
-    // ACTION: GENERATE - Create the actual image
-    if (action === "generate" || !action) {
-      if (!prompt) {
-        throw new Error("Le prompt est vide.");
-      }
-
-      console.log("Generating flyer with prompt:", prompt);
-      console.log("Has logo:", !!logoBase64);
-
-      // Enhanced prompt for professional flyer generation
-      const enhancedPrompt = `Create a stunning professional event flyer design:
-${prompt}
+    // 2. CONSTRUCTION DU PROMPT PRO
+    const stylePrompt = STYLE_PROMPTS[style?.toLowerCase()] || STYLE_PROMPTS.techno;
+    const aspectRatio = format === 'story' ? '9:16 portrait' : '1:1 square';
+    
+    const finalPrompt = `Create a stunning professional event flyer background:
+${stylePrompt}
+${vibe ? `Additional vibe: ${vibe}` : ''}
 
 CRITICAL REQUIREMENTS:
 - Ultra high resolution, 8k quality
 - Cinematic lighting with dramatic shadows
-- Modern, professional design
+- ${aspectRatio} aspect ratio
 - Leave space at top and bottom for text overlay
 - NO TEXT OR TYPOGRAPHY in the image
 - Rich colors and atmospheric effects
-${logoBase64 ? '- Incorporate the provided logo elegantly into the design' : ''}`;
+- Award-winning poster design, trending on Behance`;
 
-      let requestBody: any;
+    console.log("Generating flyer with prompt:", finalPrompt);
+
+    // 3. GÉNÉRATION AVEC LOVABLE AI
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{ role: "user", content: finalPrompt }],
+        modalities: ["image", "text"]
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("AI Gateway error:", aiResponse.status, errorText);
       
-      if (logoBase64) {
-        requestBody = {
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: enhancedPrompt },
-                { type: "image_url", image_url: { url: logoBase64 } }
-              ]
-            }
-          ],
-          modalities: ["image", "text"]
-        };
-      } else {
-        requestBody = {
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            { role: "user", content: enhancedPrompt }
-          ],
-          modalities: ["image", "text"]
-        };
+      if (aiResponse.status === 429) {
+        throw new Error("Limite de requêtes atteinte, réessayez plus tard.");
       }
-
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error("AI Gateway error:", aiResponse.status, errorText);
-        
-        if (aiResponse.status === 429) {
-          throw new Error("Limite de requêtes atteinte, réessayez plus tard.");
-        }
-        if (aiResponse.status === 402) {
-          throw new Error("Crédits insuffisants pour la génération d'image.");
-        }
-        throw new Error(`Erreur génération: ${errorText}`);
+      if (aiResponse.status === 402) {
+        throw new Error("Crédits insuffisants pour la génération d'image.");
       }
-
-      const aiData = await aiResponse.json();
-      console.log("AI response received");
-
-      // Extract base64 image from response
-      const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      
-      if (!imageData) {
-        console.error("No image in response:", JSON.stringify(aiData));
-        throw new Error("Aucune image générée par l'IA");
-      }
-
-      // Extract base64 data (remove data:image/png;base64, prefix if present)
-      const base64Match = imageData.match(/^data:image\/\w+;base64,(.+)$/);
-      const imageBase64 = base64Match ? base64Match[1] : imageData;
-
-      console.log("Returning base64 image");
-
-      return new Response(
-        JSON.stringify({ imageBase64 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error(`Erreur génération: ${errorText}`);
     }
 
-    throw new Error("Action non reconnue");
+    const aiData = await aiResponse.json();
+    const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    if (!imageData) {
+      console.error("No image in response:", JSON.stringify(aiData));
+      throw new Error("Aucune image générée par l'IA");
+    }
+
+    // Extract base64 data
+    const base64Match = imageData.match(/^data:image\/\w+;base64,(.+)$/);
+    const imageBase64 = base64Match ? base64Match[1] : imageData;
+
+    // 4. SAUVEGARDE DANS STORAGE
+    const fileName = `${organizerId}/${Date.now()}.png`;
+    const binString = atob(imageBase64);
+    const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+    
+    const { error: uploadError } = await supabase.storage
+      .from('flyers')
+      .upload(fileName, bytes, { contentType: 'image/png' });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw new Error("Erreur lors de la sauvegarde de l'image");
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('flyers').getPublicUrl(fileName);
+
+    // 5. ENREGISTREMENT EN BASE
+    await supabase.from('generated_flyers').insert({
+      organizer_id: organizerId,
+      image_url: publicUrl,
+      prompt_used: finalPrompt,
+      style: style || 'techno'
+    });
+
+    console.log("Flyer generated and saved:", publicUrl);
+
+    return new Response(
+      JSON.stringify({ 
+        url: publicUrl, 
+        remaining: isPremium ? '∞' : '0',
+        isPremium 
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (error: any) {
     console.error("Generate flyer error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
