@@ -56,6 +56,10 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        electric: {
+          DEFAULT: "hsl(var(--electric))",
+          glow: "hsl(var(--electric-glow))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
