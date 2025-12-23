@@ -2,56 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SPARK DESIGN SYSTEM - "SPEED & DARKNESS" EDITION
-  Base: Noir Profond (#020204)
-  Accent: Cyan Électrique (#00f2ff)
+/* SPARK DESIGN SYSTEM - SILICON VALLEY EDITION
+   Clean, minimal, professional (Uber/Apple style)
+   Base: Pure White (#ffffff)
+   Accent: Jet Black (#000000)
 */
 
 @layer base {
   :root {
-    /* --- COULEURS FONDAMENTALES (MODE SOMBRE FORCÉ) --- */
-    
-    /* Fond : Presque Noir pur avec une teinte bleutée imperceptible */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Light mode - Clean & Professional */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
 
-    /* Cartes : Noir un peu plus clair pour se détacher du fond */
-    --card: 240 10% 5%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
 
-    /* PRIMAIRE : LE CYAN ÉLECTRIQUE (SPEED) */
-    --primary: 190 100% 50%;
-    --primary-foreground: 240 5.9% 10%;
+    /* Primary: Pure Black */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
 
-    /* SECONDAIRE : Bleu Nuit Profond */
-    --secondary: 240 100% 15%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary: Light Gray */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
 
-    /* Muted (Textes grisés) */
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    /* Muted */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
     /* Accent */
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Bordures */
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 190 100% 50%;
+    /* Borders */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Success state */
+    /* Success */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 64%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 83%;
   }
 }
 
@@ -62,175 +90,99 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    /* Fond subtil : Grille cybernétique très légère */
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(0, 242, 255, 0.05) 0%, transparent 50%),
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 40px 40px, 40px 40px;
-    background-attachment: fixed;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography - Style éditorial */
+  /* Typography - Clean Silicon Valley */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-foreground;
-    text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    @apply font-semibold tracking-tight text-foreground;
   }
 
   h1 { @apply text-2xl md:text-4xl; }
   h2 { @apply text-xl md:text-2xl; }
   h3 { @apply text-lg md:text-xl; }
 
-  /* Mobile optimizations - 16px minimum for iOS */
+  /* Mobile optimizations */
   input, textarea, select, button {
     @apply text-base;
   }
 
-  /* Better tap targets */
   button, a {
     @apply min-h-[44px];
   }
 }
 
 @layer utilities {
-  /* --- L'EFFET "CIRCUIT NÉON" (Haute Tension) --- */
-  .neon-circuit-btn {
-    position: relative;
-    background: transparent;
-    overflow: hidden;
-    border-radius: 16px;
-    z-index: 1;
-    transition: transform 0.1s ease;
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
-  }
-
-  .neon-circuit-btn:active {
-    transform: scale(0.96);
-  }
-
-  .neon-circuit-btn:hover {
-    box-shadow: 0 0 40px rgba(0, 242, 255, 0.5);
-  }
-
-  /* Le Faisceau Rotatif */
-  .neon-circuit-btn::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      transparent, 
-      transparent, 
-      transparent 60%, 
-      #00f2ff 100%
-    );
-    animation: rotate-circuit 3s linear infinite;
-    z-index: -2;
-  }
-
-  /* L'effet Gaz Néon (Halo) */
-  .neon-circuit-btn::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      transparent, 
-      transparent, 
-      transparent 60%, 
-      #00f2ff 100%
-    );
-    animation: rotate-circuit 3s linear infinite;
-    filter: blur(20px);
-    z-index: -2;
-  }
-
-  /* Le Coeur Noir (Masque) */
-  .circuit-content {
-    position: absolute;
-    inset: 2px;
-    background: #020204;
-    border-radius: 14px;
-    z-index: -1;
+  /* Subtle hover effect */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
   }
   
-  /* Texte Circuit */
-  .text-circuit {
-    color: #fff;
-    text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);
-    letter-spacing: 0.1em;
-    font-weight: 800;
-    text-transform: uppercase;
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-lg;
   }
 
-  /* --- ANCIEN ELECTRIC BORDER (Compatibilité) --- */
-  .electric-border {
-    position: relative;
-    background: #000;
-    border-radius: 12px;
-    z-index: 0;
-    overflow: hidden;
-    transition: all 0.2s ease;
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+  /* Clean card style */
+  .card-clean {
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm;
   }
 
-  .electric-border:hover {
-    box-shadow: 0 0 40px rgba(0, 242, 255, 0.5);
-    transform: scale(1.02);
-  }
-
-  .electric-border::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      transparent, 
-      transparent, 
-      transparent, 
-      #00f2ff,
-      #0066ff,
-      #ffffff
-    );
-    animation: rotate-circuit 2s linear infinite;
-    z-index: -2;
-  }
-
-  .electric-border::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    background: #050505;
-    border-radius: 10px;
-    z-index: -1;
-  }
-  
-  /* Texte Néon */
-  .text-neon {
-    color: #fff;
-    text-shadow: 0 0 15px rgba(0, 242, 255, 0.9);
-  }
-
-  /* Bordure Néon Statique */
-  .border-neon-subtle {
-    border: 1px solid rgba(0, 242, 255, 0.2);
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
+  /* Subtle border */
+  .border-subtle {
+    @apply border border-border/50;
   }
 }
 
-@keyframes rotate-circuit {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Micro-animations */
+@layer utilities {
+  .animate-tap {
+    @apply active:scale-95 transition-transform duration-100;
+  }
+
+  .animate-press {
+    @apply active:scale-[0.98] transition-transform duration-150 ease-out;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  /* Skeleton loading */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton {
+    @apply bg-gradient-to-r from-muted via-background to-muted bg-[length:200%_100%];
+    animation: shimmer 1.5s infinite;
+  }
 }
 
-/* Floating Label Input Styles */
+/* Floating Label Input */
 @layer components {
   .floating-input-wrapper {
     @apply relative;
@@ -272,63 +224,14 @@
   }
 }
 
-/* Micro-animations */
-@layer utilities {
-  .animate-tap {
-    @apply active:scale-95 transition-transform duration-100;
-  }
-
-  .animate-press {
-    @apply active:scale-[0.98] transition-transform duration-150 ease-out;
-  }
-
-  @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.5s ease-out forwards;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-  }
-
-  @keyframes slide-up {
-    from { transform: translateY(100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  .animate-slide-up {
-    animation: slide-up 0.3s ease-out;
-  }
-
-  /* Skeleton loading */
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-
-  .skeleton {
-    @apply bg-gradient-to-r from-muted via-background to-muted bg-[length:200%_100%];
-    animation: shimmer 1.5s infinite;
-  }
-}
-
-/* Safe area for fixed bottom elements (iPhone notch) */
+/* Safe area for fixed bottom elements */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-bottom {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 }
 
-/* Thumb zone - fixed bottom bar */
+/* Thumb zone bar */
 .thumb-zone-bar {
   @apply fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border;
   @apply safe-bottom;

@@ -51,26 +51,22 @@ serve(async (req) => {
       return { ...ticket, qrBase64: qrDataUrl.split(',')[1] };
     }));
 
-    // 3. Le Template "Electric Speed Noir"
+    // 3. Template Silicon Valley - Épuré & Pro
     const event = order.events as any;
-    const eventDate = new Date(event.starts_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const eventDate = new Date(event.starts_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const eventTime = new Date(event.starts_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
     const ticketsHtml = ticketsWithQR.map((ticket, index) => `
-      <div style="background: linear-gradient(145deg, #111111, #0a0a0a); border-radius: 16px; padding: 24px; margin: 16px 0; border: 1px solid #222; box-shadow: 0 8px 32px rgba(0, 102, 255, 0.15);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <span style="color: #00ccff; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">Accès Rapide</span>
-          <span style="color: #666; font-size: 12px;">Billet ${index + 1}/${ticketsWithQR.length}</span>
+      <div style="background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 24px; margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px;">
+          <span style="color: #000000; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Billet d'entrée</span>
+          <span style="color: #888888; font-size: 12px;">${index + 1} / ${ticketsWithQR.length}</span>
         </div>
-        <div style="text-align: center; background: #ffffff; border-radius: 12px; padding: 20px;">
-          <img src="cid:qr${index}" alt="QR Code" style="width: 180px; height: 180px;" />
+        <div style="text-align: center; padding: 16px 0;">
+          <img src="cid:qr${index}" alt="QR Code" style="width: 160px; height: 160px;" />
         </div>
-        <div style="margin-top: 16px; text-align: center;">
-          <p style="color: #555; font-size: 11px; margin: 0; font-family: monospace;">ID: ${ticket.qr_token}</p>
-          <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;">
-            <div style="width: 8px; height: 8px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 8px #00ff88;"></div>
-            <span style="color: #00ff88; font-size: 12px;">Prêt à scanner</span>
-          </div>
+        <div style="margin-top: 12px; text-align: center; border-top: 1px solid #f0f0f0; padding-top: 12px;">
+          <p style="color: #888888; font-size: 11px; margin: 0; font-family: 'SF Mono', Monaco, monospace;">${ticket.qr_token}</p>
         </div>
       </div>
     `).join('');
@@ -83,38 +79,55 @@ serve(async (req) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Vos billets - ${event.title}</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #050505; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-        <div style="max-width: 480px; margin: 0 auto; padding: 0;">
-          <!-- Header avec bannière -->
-          <div style="position: relative; overflow: hidden;">
+      <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 32px;">
+            <p style="color: #888888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Confirmation</p>
+            <h1 style="color: #000000; font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.5px;">Vos billets sont prêts</h1>
+          </div>
+
+          <!-- Event Card -->
+          <div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
             ${event.banner_url 
-              ? `<img src="${event.banner_url}" alt="${event.title}" style="width: 100%; height: 200px; object-fit: cover;" />` 
-              : `<div style="width: 100%; height: 200px; background: linear-gradient(135deg, #0044cc 0%, #00ccff 100%); display: flex; align-items: center; justify-content: center;">
-                  <span style="color: white; font-size: 28px; font-weight: bold; letter-spacing: 4px;">SPARK EVENTS</span>
+              ? `<img src="${event.banner_url}" alt="${event.title}" style="width: 100%; height: 180px; object-fit: cover;" />` 
+              : `<div style="width: 100%; height: 100px; background: #000000; display: flex; align-items: center; justify-content: center;">
+                  <span style="color: white; font-size: 20px; font-weight: 600; letter-spacing: 2px;">SPARK</span>
                 </div>`
             }
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, #050505, transparent);"></div>
+            
+            <div style="padding: 24px;">
+              <h2 style="color: #000000; font-size: 20px; font-weight: 600; margin: 0 0 4px 0;">${event.title}</h2>
+              <p style="color: #888888; font-size: 14px; margin: 0 0 16px 0;">${event.venue}, ${event.city}</p>
+              
+              <div style="display: flex; gap: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0;">
+                <div>
+                  <p style="color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Date</p>
+                  <p style="color: #000000; font-size: 14px; font-weight: 500; margin: 0;">${eventDate}</p>
+                </div>
+                <div>
+                  <p style="color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Heure</p>
+                  <p style="color: #000000; font-size: 14px; font-weight: 500; margin: 0;">${eventTime}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <!-- Contenu principal -->
-          <div style="padding: 24px 20px; background: #050505;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px;">${event.title}</h1>
-              <p style="color: #00ccff; font-size: 14px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">${eventDate} • ${eventTime}</p>
-              <p style="color: #888; font-size: 13px; margin: 8px 0 0 0;">${event.venue}, ${event.city}</p>
-            </div>
 
-            ${ticketsHtml}
+          <!-- Tickets -->
+          ${ticketsHtml}
 
-            <div style="text-align: center; margin-top: 24px; padding: 16px; background: #111; border-radius: 12px; border: 1px solid #222;">
-              <p style="color: #666; font-size: 12px; margin: 0;">Réf. Commande <span style="color: #00ccff; font-family: monospace;">${order.short_code}</span></p>
-            </div>
+          <!-- Order Reference -->
+          <div style="text-align: center; margin-top: 24px; padding: 16px; background: #ffffff; border-radius: 12px; border: 1px solid #e5e5e5;">
+            <p style="color: #888888; font-size: 12px; margin: 0;">
+              Commande <span style="color: #000000; font-weight: 500; font-family: 'SF Mono', Monaco, monospace;">#${order.short_code}</span>
+            </p>
           </div>
           
           <!-- Footer -->
-          <div style="padding: 20px; text-align: center; background: linear-gradient(to bottom, #050505, #0a0a0a);">
-            <p style="color: #555; font-size: 11px; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 2px;">Billetterie propulsée par SPARK</p>
-            <p style="color: #333; font-size: 10px; margin: 0;">Le système de paiement le plus rapide pour les organisateurs.</p>
+          <div style="text-align: center; margin-top: 32px;">
+            <p style="color: #888888; font-size: 12px; margin: 0;">Spark</p>
+            <p style="color: #bbbbbb; font-size: 11px; margin: 4px 0 0 0;">Billetterie événementielle</p>
           </div>
         </div>
       </body>
@@ -141,7 +154,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Spark Billets <onboarding@resend.dev>",
         to: [user.email],
-        subject: `⚡ Billet : ${event.title}`,
+        subject: `Vos billets : ${event.title}`,
         html: emailHtml,
         attachments: attachments,
       }),
