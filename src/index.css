@@ -10,7 +10,7 @@
 
 @layer base {
   :root {
-    /* Light mode - Clean & Professional */
+    /* Light mode - Clean & Professional with Electric Blue */
     --background: 0 0% 100%;
     --foreground: 0 0% 9%;
 
@@ -20,9 +20,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* Primary: Pure Black */
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary: Electric Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
     /* Secondary: Light Gray */
     --secondary: 0 0% 96%;
@@ -32,9 +32,9 @@
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    /* Accent */
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    /* Accent: Electric Blue Light */
+    --accent: 217 91% 97%;
+    --accent-foreground: 217 91% 40%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
@@ -43,13 +43,17 @@
     /* Borders */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 9%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
     /* Success */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+
+    /* Electric Blue variants */
+    --electric: 217 91% 60%;
+    --electric-glow: 217 91% 70%;
   }
 
   .dark {
@@ -62,8 +66,9 @@
     --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    /* Primary: Electric Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
@@ -71,15 +76,20 @@
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 64%;
 
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent: Electric Blue Dark */
+    --accent: 217 91% 15%;
+    --accent-foreground: 217 91% 70%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 0 0% 83%;
+    --ring: 217 91% 60%;
+
+    /* Electric Blue variants */
+    --electric: 217 91% 60%;
+    --electric-glow: 217 91% 70%;
   }
 }
 
