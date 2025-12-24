@@ -140,7 +140,7 @@ export default function OrganizerSubscription() {
             <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
             
             {isPremium && (
-              <div className="absolute top-4 right-4">
+              <div className="absolute top-4 right-4 z-10">
                 <Badge className="bg-primary text-primary-foreground gap-1.5 px-3 py-1 shadow-lg shadow-primary/40">
                   <Crown className="h-3 w-3" />
                   ACTIF
@@ -149,7 +149,7 @@ export default function OrganizerSubscription() {
             )}
             
             {!isPremium && (
-              <div className="absolute top-4 right-4">
+              <div className="absolute top-4 right-4 z-10">
                 <Badge className="gap-1.5 bg-primary/10 text-primary border border-primary/30 px-3 py-1 font-semibold">
                   <Gift className="h-3 w-3" />
                   14 JOURS GRATUITS
@@ -157,7 +157,7 @@ export default function OrganizerSubscription() {
               </div>
             )}
             
-            <CardHeader className="pb-4 relative">
+            <CardHeader className="pb-4 relative pt-14">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="h-5 w-5 text-primary" />
                 <span className="text-primary font-bold tracking-wide">SPARK PRO</span>
