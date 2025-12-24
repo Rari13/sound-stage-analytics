@@ -80,46 +80,68 @@ export default function OrganizerSubscription() {
         <div className="grid md:grid-cols-2 gap-6 items-stretch">
           
           {/* Plan GRATUIT */}
-          <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${!isPremium ? 'border-primary/50' : 'border-border opacity-70'}`}>
+          <Card className={`relative overflow-hidden border transition-all duration-300 bg-card ${!isPremium ? 'border-border shadow-sm' : 'border-border opacity-60'}`}>
             {!isPremium && (
-              <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl">
-                ACTUEL
+              <div className="absolute top-4 right-4">
+                <Badge variant="secondary" className="text-xs font-medium">
+                  ACTUEL
+                </Badge>
               </div>
             )}
             <CardHeader className="pb-4">
               <CardTitle className="text-xl font-bold">Starter</CardTitle>
               <CardDescription>L'essentiel pour commencer</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
-                <div className="text-3xl font-black">0€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
-                <p className="text-sm text-muted-foreground mt-1">Commission : 1.50€ fixe</p>
+                <div className="text-4xl font-black tracking-tight">0€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
+                <p className="text-sm text-muted-foreground mt-2">Commission : 1.50€ par billet</p>
               </div>
               
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Billetterie illimitée</li>
-                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Application de Scan</li>
-                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Paiement immédiat</li>
-                <li className="flex items-center gap-2 text-muted-foreground"><span className="w-4 text-center">✕</span> Data Intelligence</li>
-                <li className="flex items-center gap-2 text-muted-foreground"><span className="w-4 text-center">✕</span> Studio graphique IA</li>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-3">
+                  <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  </div>
+                  Billetterie illimitée
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="h-5 w-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  </div>
+                  Application de Scan
+                </li>
+                <li className="flex items-center gap-3 text-muted-foreground">
+                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-xs">✕</span>
+                  </div>
+                  Data Intelligence
+                </li>
+                <li className="flex items-center gap-3 text-muted-foreground">
+                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-xs">✕</span>
+                  </div>
+                  Studio graphique IA
+                </li>
               </ul>
             </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full" disabled>
+            <CardFooter className="pt-4">
+              <Button variant="outline" className="w-full h-11" disabled>
                 {!isPremium ? "Votre plan actuel" : "Plan gratuit"}
               </Button>
             </CardFooter>
           </Card>
 
           {/* Plan PRO */}
-          <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${isPremium ? 'border-primary shadow-xl shadow-primary/20' : 'border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/10'}`}>
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-electric to-primary" />
-            <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-electric/10 rounded-full blur-2xl" />
+          <Card className={`relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-primary/5 via-background to-primary/5 ${isPremium ? 'border-primary shadow-xl shadow-primary/25' : 'border-primary/40 hover:border-primary hover:shadow-xl hover:shadow-primary/20'}`}>
+            {/* Decorative elements */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary" />
+            <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
             
             {isPremium && (
-              <div className="absolute top-3 right-3">
-                <Badge className="bg-primary text-primary-foreground gap-1 shadow-lg shadow-primary/30">
+              <div className="absolute top-4 right-4">
+                <Badge className="bg-primary text-primary-foreground gap-1.5 px-3 py-1 shadow-lg shadow-primary/40">
                   <Crown className="h-3 w-3" />
                   ACTIF
                 </Badge>
@@ -127,8 +149,8 @@ export default function OrganizerSubscription() {
             )}
             
             {!isPremium && (
-              <div className="absolute top-3 right-3">
-                <Badge variant="outline" className="gap-1 border-primary text-primary font-bold">
+              <div className="absolute top-4 right-4">
+                <Badge className="gap-1.5 bg-primary/10 text-primary border border-primary/30 px-3 py-1 font-semibold">
                   <Gift className="h-3 w-3" />
                   14 JOURS GRATUITS
                 </Badge>
@@ -136,52 +158,58 @@ export default function OrganizerSubscription() {
             )}
             
             <CardHeader className="pb-4 relative">
-              <div className="flex items-center gap-2 mb-1">
-                <Zap className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-primary font-bold text-sm">SPARK PRO</span>
-                <Zap className="h-4 w-4 text-primary animate-pulse" />
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <span className="text-primary font-bold tracking-wide">SPARK PRO</span>
+                <Zap className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle className="text-xl font-bold">L'offre Ultime</CardTitle>
+              <CardTitle className="text-2xl font-bold">L'offre Ultime</CardTitle>
               <CardDescription>Rentabilité maximale & IA</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 relative">
+            <CardContent className="space-y-6 relative">
               <div>
-                <div className="text-3xl font-black text-primary">150€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                  <Zap className="h-3 w-3" />
+                <div className="text-4xl font-black tracking-tight text-primary">150€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
+                <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 text-primary text-sm font-bold border border-primary/25">
+                  <Zap className="h-4 w-4" />
                   Commission fixe : 0.99€
                 </div>
               </div>
               
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-start gap-2">
-                  <Zap className="h-4 w-4 text-primary mt-0.5" />
+              <ul className="space-y-4 text-sm">
+                <li className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center mt-0.5 shrink-0">
+                    <Zap className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-semibold">Revenus Instantanés</span>
-                    <p className="text-xs text-muted-foreground">Argent en 10 secondes</p>
+                    <span className="font-semibold text-foreground">Revenus Instantanés</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Argent en 10 secondes</p>
                   </div>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5" />
+                <li className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center mt-0.5 shrink-0">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-semibold">Data Intelligence</span>
-                    <p className="text-xs text-muted-foreground">Analyses & prédictions</p>
+                    <span className="font-semibold text-foreground">Data Intelligence</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Analyses & prédictions</p>
                   </div>
                 </li>
-                <li className="flex items-start gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary mt-0.5" />
+                <li className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center mt-0.5 shrink-0">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-semibold">Studio Graphique IA</span>
-                    <p className="text-xs text-muted-foreground">Flyers illimités</p>
+                    <span className="font-semibold text-foreground">Studio Graphique IA</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Flyers illimités</p>
                   </div>
                 </li>
               </ul>
             </CardContent>
-            <CardFooter className="relative">
+            <CardFooter className="relative pt-4">
               {isPremium ? (
                 <Button 
                   variant="outline"
-                  className="w-full gap-2 border-primary text-primary hover:bg-primary/10" 
+                  className="w-full h-12 gap-2 border-primary text-primary hover:bg-primary/10 font-semibold" 
                   onClick={handleManage}
                   disabled={processing}
                 >
@@ -190,20 +218,20 @@ export default function OrganizerSubscription() {
                 </Button>
               ) : (
                 <Button 
-                  className="w-full h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40" 
+                  className="w-full h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 gap-2" 
                   onClick={handleUpgrade}
                   disabled={processing}
                 >
                   {processing ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Redirection...
                     </>
                   ) : (
                     <>
-                      <Zap className="h-4 w-4 mr-2" />
+                      <Zap className="h-4 w-4" />
                       Essayer gratuitement 14 jours
-                      <Gift className="h-4 w-4 ml-2" />
+                      <Gift className="h-4 w-4" />
                     </>
                   )}
                 </Button>
