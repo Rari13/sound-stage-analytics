@@ -93,14 +93,14 @@ export default function OrganizerSubscription() {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-3xl font-black">0€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
-                <p className="text-sm text-muted-foreground mt-1">Commission : 5% + 0.99€</p>
+                <p className="text-sm text-muted-foreground mt-1">Commission : 1.50€ fixe</p>
               </div>
               
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Billetterie illimitée</li>
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Application de Scan</li>
-                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Paiement à J+7</li>
-                <li className="flex items-center gap-2 text-muted-foreground"><span className="w-4 text-center">✕</span> IA prédictive</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Paiement immédiat</li>
+                <li className="flex items-center gap-2 text-muted-foreground"><span className="w-4 text-center">✕</span> Data Intelligence</li>
                 <li className="flex items-center gap-2 text-muted-foreground"><span className="w-4 text-center">✕</span> Studio graphique IA</li>
               </ul>
             </CardContent>
@@ -112,12 +112,14 @@ export default function OrganizerSubscription() {
           </Card>
 
           {/* Plan PRO */}
-          <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${isPremium ? 'border-accent shadow-lg shadow-accent/10' : 'border-accent/50 hover:border-accent'}`}>
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-accent to-purple-600" />
+          <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${isPremium ? 'border-primary shadow-xl shadow-primary/20' : 'border-primary/50 hover:border-primary hover:shadow-lg hover:shadow-primary/10'}`}>
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-electric to-primary" />
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-electric/10 rounded-full blur-2xl" />
             
             {isPremium && (
               <div className="absolute top-3 right-3">
-                <Badge className="bg-accent text-accent-foreground gap-1">
+                <Badge className="bg-primary text-primary-foreground gap-1 shadow-lg shadow-primary/30">
                   <Crown className="h-3 w-3" />
                   ACTIF
                 </Badge>
@@ -126,25 +128,26 @@ export default function OrganizerSubscription() {
             
             {!isPremium && (
               <div className="absolute top-3 right-3">
-                <Badge variant="outline" className="gap-1 border-accent text-accent">
+                <Badge variant="outline" className="gap-1 border-primary text-primary font-bold">
                   <Gift className="h-3 w-3" />
                   14 JOURS GRATUITS
                 </Badge>
               </div>
             )}
             
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-4 relative">
               <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="h-4 w-4 text-accent" />
-                <span className="text-accent font-bold text-sm">SPARK PRO</span>
+                <Zap className="h-4 w-4 text-primary animate-pulse" />
+                <span className="text-primary font-bold text-sm">SPARK PRO</span>
+                <Zap className="h-4 w-4 text-primary animate-pulse" />
               </div>
               <CardTitle className="text-xl font-bold">L'offre Ultime</CardTitle>
               <CardDescription>Rentabilité maximale & IA</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 relative">
               <div>
-                <div className="text-3xl font-black">150€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-bold">
+                <div className="text-3xl font-black text-primary">150€ <span className="text-base font-normal text-muted-foreground">/ mois</span></div>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
                   <Zap className="h-3 w-3" />
                   Commission fixe : 0.99€
                 </div>
@@ -152,36 +155,33 @@ export default function OrganizerSubscription() {
               
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-2">
-                  <Zap className="h-4 w-4 text-accent mt-0.5" />
+                  <Zap className="h-4 w-4 text-primary mt-0.5" />
                   <div>
                     <span className="font-semibold">Revenus Instantanés</span>
                     <p className="text-xs text-muted-foreground">Argent en 10 secondes</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-600 mt-0.5" />
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5" />
                   <div>
-                    <span className="font-semibold">Cerveau IA Gemini</span>
+                    <span className="font-semibold">Data Intelligence</span>
                     <p className="text-xs text-muted-foreground">Analyses & prédictions</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600 mt-0.5" />
+                  <TrendingUp className="h-4 w-4 text-primary mt-0.5" />
                   <div>
                     <span className="font-semibold">Studio Graphique IA</span>
                     <p className="text-xs text-muted-foreground">Flyers illimités</p>
                   </div>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-accent" /> Support WhatsApp 24/7
-                </li>
               </ul>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="relative">
               {isPremium ? (
                 <Button 
                   variant="outline"
-                  className="w-full gap-2" 
+                  className="w-full gap-2 border-primary text-primary hover:bg-primary/10" 
                   onClick={handleManage}
                   disabled={processing}
                 >
@@ -190,7 +190,7 @@ export default function OrganizerSubscription() {
                 </Button>
               ) : (
                 <Button 
-                  className="w-full h-12 font-bold bg-accent hover:bg-accent/90 text-accent-foreground" 
+                  className="w-full h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40" 
                   onClick={handleUpgrade}
                   disabled={processing}
                 >
@@ -201,6 +201,7 @@ export default function OrganizerSubscription() {
                     </>
                   ) : (
                     <>
+                      <Zap className="h-4 w-4 mr-2" />
                       Essayer gratuitement 14 jours
                       <Gift className="h-4 w-4 ml-2" />
                     </>

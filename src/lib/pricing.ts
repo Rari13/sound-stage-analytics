@@ -1,18 +1,18 @@
 export const PRICING_STRATEGY = {
   // Plan GRATUIT (Starter)
-  // Idéal pour les petits événements associatifs ou ponctuels
+  // Frais fixes uniquement, paiement immédiat
   starter: {
     name: "Starter",
     monthlyPrice: 0,
     features: [
       "Billetterie illimitée",
       "Scanner d'entrée",
-      "Paiement à J+7",
+      "Paiement immédiat",
       "Tableau de bord standard"
     ],
     fees: {
-      percent: 0.05, // 5% de commission
-      fixed: 0.99,   // + 0.99€ par billet
+      percent: 0,    // 0% de commission variable
+      fixed: 1.50,   // 1.50€ fixe par billet
     },
     aiLimits: {
       flyers: 1,
@@ -20,21 +20,20 @@ export const PRICING_STRATEGY = {
     }
   },
 
-  // Plan PRO (Le modèle "Shotgun Killer")
+  // Plan PRO (Spark Pro)
   // Pour les organisateurs sérieux et réguliers
   pro: {
-    name: "Sound Pro + IA",
+    name: "Spark Pro",
     monthlyPrice: 15000, // 150.00€ en centimes
     features: [
       "Commission fixe unique (0.99€)",
-      "Paiements Instantanés (Bridge)",
-      "IA Gemini : Analyses Prédictives Illimitées",
-      "IA Studio : Génération de Flyers Illimitée",
-      "Support WhatsApp dédié 24/7"
+      "Paiements Instantanés",
+      "Data Intelligence illimitée",
+      "Studio Graphique IA illimité"
     ],
     fees: {
-      percent: 0,    // 0% de commission variable !
-      fixed: 0.99,   // 0.99€ fixe par billet (Comme Shotgun)
+      percent: 0,    // 0% de commission variable
+      fixed: 0.99,   // 0.99€ fixe par billet
     },
     aiLimits: {
       flyers: 9999,
@@ -66,10 +65,5 @@ export const calculateTicketPrice = (basePriceCents: number, plan: 'starter' | '
 // Fonction pour afficher les frais de manière lisible
 export const formatFees = (plan: 'starter' | 'pro' = 'starter') => {
   const strategy = PRICING_STRATEGY[plan];
-  
-  if (strategy.fees.percent === 0) {
-    return `${strategy.fees.fixed.toFixed(2)}€ / billet`;
-  }
-  
-  return `${(strategy.fees.percent * 100).toFixed(0)}% + ${strategy.fees.fixed.toFixed(2)}€ / billet`;
+  return `${strategy.fees.fixed.toFixed(2)}€ / billet`;
 };
