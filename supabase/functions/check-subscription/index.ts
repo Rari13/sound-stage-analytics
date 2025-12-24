@@ -25,14 +25,36 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      // Not authenticated - return not subscribed (not an error)
+      console.log("[CHECK-SUBSCRIPTION] No auth header, returning not subscribed");
+      return new Response(JSON.stringify({ 
+        subscribed: false, 
+        isPremium: false,
+        trialActive: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    if (userError || !userData.user?.email) {
+      // Auth error - return not subscribed (graceful handling)
+      console.log("[CHECK-SUBSCRIPTION] Auth error or no email, returning not subscribed");
+      return new Response(JSON.stringify({ 
+        subscribed: false, 
+        isPremium: false,
+        trialActive: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
     console.log("[CHECK-SUBSCRIPTION] User authenticated:", user.email);
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
@@ -77,10 +99,26 @@ serve(async (req) => {
     }
 
     const isTrialing = activeOrTrialing.status === "trialing";
-    const subscriptionEnd = new Date(activeOrTrialing.current_period_end * 1000).toISOString();
-    const trialEnd = activeOrTrialing.trial_end 
-      ? new Date(activeOrTrialing.trial_end * 1000).toISOString() 
-      : null;
+    
+    // Safe date parsing with fallbacks
+    let subscriptionEnd: string | null = null;
+    let trialEnd: string | null = null;
+    
+    try {
+      if (activeOrTrialing.current_period_end && activeOrTrialing.current_period_end > 0) {
+        subscriptionEnd = new Date(activeOrTrialing.current_period_end * 1000).toISOString();
+      }
+    } catch (e) {
+      console.log("[CHECK-SUBSCRIPTION] Error parsing subscription end date");
+    }
+    
+    try {
+      if (activeOrTrialing.trial_end && activeOrTrialing.trial_end > 0) {
+        trialEnd = new Date(activeOrTrialing.trial_end * 1000).toISOString();
+      }
+    } catch (e) {
+      console.log("[CHECK-SUBSCRIPTION] Error parsing trial end date");
+    }
 
     console.log("[CHECK-SUBSCRIPTION] Active subscription found, trialing:", isTrialing);
 
@@ -98,9 +136,15 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[CHECK-SUBSCRIPTION] Error:", error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    // Return graceful response instead of 500
+    return new Response(JSON.stringify({ 
+      subscribed: false, 
+      isPremium: false,
+      trialActive: false,
+      error: errorMessage 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 200,
     });
   }
 });
