@@ -1069,10 +1069,13 @@ export type Database = {
         Row: {
           event_id: string
           id: string
+          is_for_sale: boolean | null
           issued_at: string | null
           order_id: string
+          original_price_cents: number | null
           qr_hash: string | null
           qr_token: string
+          resale_price_cents: number | null
           status: string | null
           used_at: string | null
           user_id: string
@@ -1081,10 +1084,13 @@ export type Database = {
         Insert: {
           event_id: string
           id?: string
+          is_for_sale?: boolean | null
           issued_at?: string | null
           order_id: string
+          original_price_cents?: number | null
           qr_hash?: string | null
           qr_token: string
+          resale_price_cents?: number | null
           status?: string | null
           used_at?: string | null
           user_id: string
@@ -1093,10 +1099,13 @@ export type Database = {
         Update: {
           event_id?: string
           id?: string
+          is_for_sale?: boolean | null
           issued_at?: string | null
           order_id?: string
+          original_price_cents?: number | null
           qr_hash?: string | null
           qr_token?: string
+          resale_price_cents?: number | null
           status?: string | null
           used_at?: string | null
           user_id?: string

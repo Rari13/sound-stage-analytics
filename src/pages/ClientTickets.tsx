@@ -3,12 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Ticket, Calendar, MapPin, ArrowLeft, Download, RotateCcw, AlertCircle, CheckCircle } from "lucide-react";
+import { Ticket, Calendar, MapPin, ArrowLeft, Download, RotateCcw, AlertCircle, CheckCircle, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { toast } from "sonner";
+import { TicketActionModal } from "@/components/TicketActionModal";
 
 interface TicketWithEvent {
   id: string;
@@ -16,12 +17,16 @@ interface TicketWithEvent {
   status: string;
   issued_at: string;
   order_id: string;
+  is_for_sale?: boolean;
+  resale_price_cents?: number;
+  original_price_cents?: number;
   event: {
     id: string;
     title: string;
     venue: string;
     city: string;
     starts_at: string;
+    ends_at?: string;
     organizer_id: string;
   };
 }
@@ -49,6 +54,10 @@ const ClientTickets = () => {
   const [ticketForRefund, setTicketForRefund] = useState<TicketWithEvent | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [submittingRefund, setSubmittingRefund] = useState(false);
+  
+  // Ticket action modal state
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [ticketForAction, setTicketForAction] = useState<TicketWithEvent | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -66,7 +75,10 @@ const ClientTickets = () => {
         status,
         issued_at,
         order_id,
-        event:events(id, title, venue, city, starts_at, organizer_id)
+        is_for_sale,
+        resale_price_cents,
+        original_price_cents,
+        event:events(id, title, venue, city, starts_at, ends_at, organizer_id)
       `)
       .eq('user_id', user?.id)
       .order('issued_at', { ascending: false });
@@ -234,6 +246,11 @@ const ClientTickets = () => {
                           {ticket.status === 'valid' ? 'Valide' :
                            ticket.status === 'used' ? 'Utilisé' : 'Invalide'}
                         </span>
+                        {ticket.is_for_sale && (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            En vente
+                          </span>
+                        )}
                         {refundStatus && getRefundStatusBadge(refundStatus.status)}
                       </div>
                       
@@ -264,13 +281,15 @@ const ClientTickets = () => {
                       </Link>
                       {ticket.status === 'valid' && !refundStatus && (
                         <Button 
-                          variant="ghost" 
+                          variant="secondary" 
                           size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => openRefundDialog(ticket)}
+                          onClick={() => {
+                            setTicketForAction(ticket);
+                            setActionModalOpen(true);
+                          }}
                         >
-                          <RotateCcw className="h-4 w-4 mr-1" />
-                          Demander un remboursement
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Gérer / Revendre
                         </Button>
                       )}
                     </div>
@@ -393,6 +412,22 @@ const ClientTickets = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Ticket Action Modal (Resale/Refund) */}
+        {ticketForAction && (
+          <TicketActionModal
+            open={actionModalOpen}
+            onOpenChange={(open) => {
+              setActionModalOpen(open);
+              if (!open) setTicketForAction(null);
+            }}
+            ticket={ticketForAction}
+            onSuccess={() => {
+              fetchTickets();
+              fetchRefundRequests();
+            }}
+          />
+        )}
       </div>
     </div>
   );
