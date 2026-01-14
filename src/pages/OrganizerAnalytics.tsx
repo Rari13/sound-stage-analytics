@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, BarChart3, Send, MessageCircle, Zap } from "lucide-react";
+import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, BarChart3, Send, MessageCircle, Zap, Wand2 } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { MarketIntelligence } from "@/components/MarketIntelligence";
 import { DemandPrediction } from "@/components/DemandPrediction";
+import { EventSimulator } from "@/components/EventSimulator";
 import { PremiumGate } from "@/components/PremiumGate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -369,8 +370,12 @@ export default function OrganizerAnalytics() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="prediction" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="simulator" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="simulator" className="flex items-center gap-1">
+            <Wand2 className="h-3 w-3" />
+            Simulateur
+          </TabsTrigger>
           <TabsTrigger value="prediction" className="flex items-center gap-1">
             <Zap className="h-3 w-3" />
             Prédiction
@@ -378,6 +383,10 @@ export default function OrganizerAnalytics() {
           <TabsTrigger value="market">Marché</TabsTrigger>
           <TabsTrigger value="data">Données</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="simulator" className="mt-4">
+          <EventSimulator organizerId={organizerId || ""} />
+        </TabsContent>
 
         <TabsContent value="prediction" className="mt-4">
           <DemandPrediction organizerId={organizerId || ""} />
