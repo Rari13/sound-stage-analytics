@@ -134,22 +134,62 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          country: string
+          event_date: string
+          event_name: string
+          event_type: string
+          id: string
+          impact_on_nightlife: number | null
+          notes: string | null
+          region: string | null
+        }
+        Insert: {
+          country?: string
+          event_date: string
+          event_name: string
+          event_type: string
+          id?: string
+          impact_on_nightlife?: number | null
+          notes?: string | null
+          region?: string | null
+        }
+        Update: {
+          country?: string
+          event_date?: string
+          event_name?: string
+          event_type?: string
+          id?: string
+          impact_on_nightlife?: number | null
+          notes?: string | null
+          region?: string | null
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           address: string | null
           age_group: string | null
           art_movements: string[] | null
           artists: string[] | null
+          avg_ticket_price_cents: number | null
           city: string | null
           created_at: string | null
+          early_bird_rate: number | null
           gender: string | null
+          last_minute_rate: number | null
           last_survey_at: string | null
           latitude: number | null
           longitude: number | null
           max_distance_km: number | null
+          max_ticket_price_cents: number | null
           nationality: string | null
           onboarding_completed_at: string | null
           preferred_genres: string[] | null
+          price_sensitivity_score: number | null
+          promo_usage_rate: number | null
+          purchase_frequency: string | null
           region: string | null
           updated_at: string | null
           user_id: string
@@ -159,16 +199,23 @@ export type Database = {
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null
+          avg_ticket_price_cents?: number | null
           city?: string | null
           created_at?: string | null
+          early_bird_rate?: number | null
           gender?: string | null
+          last_minute_rate?: number | null
           last_survey_at?: string | null
           latitude?: number | null
           longitude?: number | null
           max_distance_km?: number | null
+          max_ticket_price_cents?: number | null
           nationality?: string | null
           onboarding_completed_at?: string | null
           preferred_genres?: string[] | null
+          price_sensitivity_score?: number | null
+          promo_usage_rate?: number | null
+          purchase_frequency?: string | null
           region?: string | null
           updated_at?: string | null
           user_id: string
@@ -178,21 +225,97 @@ export type Database = {
           age_group?: string | null
           art_movements?: string[] | null
           artists?: string[] | null
+          avg_ticket_price_cents?: number | null
           city?: string | null
           created_at?: string | null
+          early_bird_rate?: number | null
           gender?: string | null
+          last_minute_rate?: number | null
           last_survey_at?: string | null
           latitude?: number | null
           longitude?: number | null
           max_distance_km?: number | null
+          max_ticket_price_cents?: number | null
           nationality?: string | null
           onboarding_completed_at?: string | null
           preferred_genres?: string[] | null
+          price_sensitivity_score?: number | null
+          promo_usage_rate?: number | null
+          purchase_frequency?: string | null
           region?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: []
+      }
+      competitive_events: {
+        Row: {
+          competitor_capacity: number | null
+          competitor_city: string
+          competitor_date: string
+          competitor_event_id: string | null
+          competitor_genre: string | null
+          competitor_name: string
+          competitor_venue: string | null
+          created_at: string | null
+          date_overlap_days: number | null
+          distance_km: number | null
+          event_id: string
+          genre_overlap_score: number | null
+          id: string
+          impact_score: number | null
+          source: string | null
+        }
+        Insert: {
+          competitor_capacity?: number | null
+          competitor_city: string
+          competitor_date: string
+          competitor_event_id?: string | null
+          competitor_genre?: string | null
+          competitor_name: string
+          competitor_venue?: string | null
+          created_at?: string | null
+          date_overlap_days?: number | null
+          distance_km?: number | null
+          event_id: string
+          genre_overlap_score?: number | null
+          id?: string
+          impact_score?: number | null
+          source?: string | null
+        }
+        Update: {
+          competitor_capacity?: number | null
+          competitor_city?: string
+          competitor_date?: string
+          competitor_event_id?: string | null
+          competitor_genre?: string | null
+          competitor_name?: string
+          competitor_venue?: string | null
+          created_at?: string | null
+          date_overlap_days?: number | null
+          distance_km?: number | null
+          event_id?: string
+          genre_overlap_score?: number | null
+          id?: string
+          impact_score?: number | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitive_events_competitor_event_id_fkey"
+            columns: ["competitor_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitive_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demand_predictions: {
         Row: {
@@ -756,6 +879,47 @@ export type Database = {
           },
         ]
       }
+      no_show_analytics: {
+        Row: {
+          calculated_at: string | null
+          event_id: string
+          id: string
+          no_show_rate: number | null
+          segment_type: string
+          segment_value: string
+          tickets_scanned: number
+          tickets_sold: number
+        }
+        Insert: {
+          calculated_at?: string | null
+          event_id: string
+          id?: string
+          no_show_rate?: number | null
+          segment_type: string
+          segment_value: string
+          tickets_scanned: number
+          tickets_sold: number
+        }
+        Update: {
+          calculated_at?: string | null
+          event_id?: string
+          id?: string
+          no_show_rate?: number | null
+          segment_type?: string
+          segment_value?: string
+          tickets_scanned?: number
+          tickets_sold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_show_analytics_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount_total_cents: number
@@ -936,6 +1100,63 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      price_change_events: {
+        Row: {
+          changed_at: string
+          created_at: string | null
+          elasticity_observed: number | null
+          event_id: string
+          id: string
+          price_after_cents: number
+          price_before_cents: number
+          price_tier_id: string | null
+          reason: string | null
+          sales_24h_after: number | null
+          sales_24h_before: number | null
+        }
+        Insert: {
+          changed_at?: string
+          created_at?: string | null
+          elasticity_observed?: number | null
+          event_id: string
+          id?: string
+          price_after_cents: number
+          price_before_cents: number
+          price_tier_id?: string | null
+          reason?: string | null
+          sales_24h_after?: number | null
+          sales_24h_before?: number | null
+        }
+        Update: {
+          changed_at?: string
+          created_at?: string | null
+          elasticity_observed?: number | null
+          event_id?: string
+          id?: string
+          price_after_cents?: number
+          price_before_cents?: number
+          price_tier_id?: string | null
+          reason?: string | null
+          sales_24h_after?: number | null
+          sales_24h_before?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_change_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_events_price_tier_id_fkey"
+            columns: ["price_tier_id"]
+            isOneToOne: false
+            referencedRelation: "price_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_tiers: {
         Row: {
@@ -1170,6 +1391,53 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_snapshots: {
+        Row: {
+          created_at: string | null
+          current_price_cents: number | null
+          days_until_event: number | null
+          event_id: string
+          fill_rate: number | null
+          id: string
+          revenue_cents: number
+          snapshot_at: string
+          tickets_sold: number
+          velocity_per_hour: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_price_cents?: number | null
+          days_until_event?: number | null
+          event_id: string
+          fill_rate?: number | null
+          id?: string
+          revenue_cents?: number
+          snapshot_at?: string
+          tickets_sold?: number
+          velocity_per_hour?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_price_cents?: number | null
+          days_until_event?: number | null
+          event_id?: string
+          fill_rate?: number | null
+          id?: string
+          revenue_cents?: number
+          snapshot_at?: string
+          tickets_sold?: number
+          velocity_per_hour?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_snapshots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -1553,6 +1821,145 @@ export type Database = {
           },
           {
             foreignKeyName: "venue_profiles_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weather_forecasts: {
+        Row: {
+          city: string
+          fetched_at: string | null
+          forecast_date: string
+          id: string
+          precipitation_mm: number | null
+          precipitation_probability: number | null
+          source: string | null
+          temperature_high_c: number | null
+          temperature_low_c: number | null
+          weather_condition: string | null
+          weather_score: number | null
+        }
+        Insert: {
+          city: string
+          fetched_at?: string | null
+          forecast_date: string
+          id?: string
+          precipitation_mm?: number | null
+          precipitation_probability?: number | null
+          source?: string | null
+          temperature_high_c?: number | null
+          temperature_low_c?: number | null
+          weather_condition?: string | null
+          weather_score?: number | null
+        }
+        Update: {
+          city?: string
+          fetched_at?: string | null
+          forecast_date?: string
+          id?: string
+          precipitation_mm?: number | null
+          precipitation_probability?: number | null
+          source?: string | null
+          temperature_high_c?: number | null
+          temperature_low_c?: number | null
+          weather_condition?: string | null
+          weather_score?: number | null
+        }
+        Relationships: []
+      }
+      yield_recommendations: {
+        Row: {
+          actual_velocity: number | null
+          applied_at: string | null
+          confidence_score: number | null
+          created_at: string | null
+          current_fill_rate: number | null
+          current_price_cents: number | null
+          current_tickets_sold: number | null
+          days_until_event: number | null
+          event_id: string
+          expected_velocity: number | null
+          expires_at: string | null
+          id: string
+          organizer_id: string
+          predicted_demand: number | null
+          price_change_percent: number | null
+          reasoning: string | null
+          recommended_action: string | null
+          recommended_price_cents: number | null
+          revenue_at_risk_cents: number | null
+          sell_out_risk: string | null
+          status: string | null
+          velocity_ratio: number | null
+        }
+        Insert: {
+          actual_velocity?: number | null
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          current_fill_rate?: number | null
+          current_price_cents?: number | null
+          current_tickets_sold?: number | null
+          days_until_event?: number | null
+          event_id: string
+          expected_velocity?: number | null
+          expires_at?: string | null
+          id?: string
+          organizer_id: string
+          predicted_demand?: number | null
+          price_change_percent?: number | null
+          reasoning?: string | null
+          recommended_action?: string | null
+          recommended_price_cents?: number | null
+          revenue_at_risk_cents?: number | null
+          sell_out_risk?: string | null
+          status?: string | null
+          velocity_ratio?: number | null
+        }
+        Update: {
+          actual_velocity?: number | null
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          current_fill_rate?: number | null
+          current_price_cents?: number | null
+          current_tickets_sold?: number | null
+          days_until_event?: number | null
+          event_id?: string
+          expected_velocity?: number | null
+          expires_at?: string | null
+          id?: string
+          organizer_id?: string
+          predicted_demand?: number | null
+          price_change_percent?: number | null
+          reasoning?: string | null
+          recommended_action?: string | null
+          recommended_price_cents?: number | null
+          revenue_at_risk_cents?: number | null
+          sell_out_risk?: string | null
+          status?: string | null
+          velocity_ratio?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yield_recommendations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yield_recommendations_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yield_recommendations_organizer_id_fkey"
             columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "public_organizers_view"
