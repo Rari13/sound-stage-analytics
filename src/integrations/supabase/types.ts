@@ -288,6 +288,143 @@ export type Database = {
           },
         ]
       }
+      event_simulations: {
+        Row: {
+          ai_recommendation: string | null
+          artist_id: string | null
+          artist_name: string
+          break_even_tickets: number | null
+          cachet_cents: number
+          capacity: number
+          city: string
+          competition_factor: number | null
+          confidence_interval_high: number | null
+          confidence_interval_low: number | null
+          created_at: string
+          demand_std_deviation: number | null
+          expected_demand: number | null
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          f_sat: number | null
+          id: string
+          ipc_base: number | null
+          ipc_score: number | null
+          is_viable: boolean | null
+          m_la: number | null
+          optimal_price_cents: number | null
+          organizer_id: string
+          profit_margin: number | null
+          recommended_price_cents: number | null
+          risk_assessment: string | null
+          seasonality_factor: number | null
+          sell_out_probability: number | null
+          target_date: string | null
+          updated_at: string
+          venue_id: string | null
+          venue_name: string
+          weather_factor: number | null
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          artist_id?: string | null
+          artist_name: string
+          break_even_tickets?: number | null
+          cachet_cents: number
+          capacity: number
+          city: string
+          competition_factor?: number | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          created_at?: string
+          demand_std_deviation?: number | null
+          expected_demand?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          f_sat?: number | null
+          id?: string
+          ipc_base?: number | null
+          ipc_score?: number | null
+          is_viable?: boolean | null
+          m_la?: number | null
+          optimal_price_cents?: number | null
+          organizer_id: string
+          profit_margin?: number | null
+          recommended_price_cents?: number | null
+          risk_assessment?: string | null
+          seasonality_factor?: number | null
+          sell_out_probability?: number | null
+          target_date?: string | null
+          updated_at?: string
+          venue_id?: string | null
+          venue_name: string
+          weather_factor?: number | null
+        }
+        Update: {
+          ai_recommendation?: string | null
+          artist_id?: string | null
+          artist_name?: string
+          break_even_tickets?: number | null
+          cachet_cents?: number
+          capacity?: number
+          city?: string
+          competition_factor?: number | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          created_at?: string
+          demand_std_deviation?: number | null
+          expected_demand?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          f_sat?: number | null
+          id?: string
+          ipc_base?: number | null
+          ipc_score?: number | null
+          is_viable?: boolean | null
+          m_la?: number | null
+          optimal_price_cents?: number | null
+          organizer_id?: string
+          profit_margin?: number | null
+          recommended_price_cents?: number | null
+          risk_assessment?: string | null
+          seasonality_factor?: number | null
+          sell_out_probability?: number | null
+          target_date?: string | null
+          updated_at?: string
+          venue_id?: string | null
+          venue_name?: string
+          weather_factor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_simulations_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_simulations_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_simulations_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_simulations_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venue_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address_line1: string | null
