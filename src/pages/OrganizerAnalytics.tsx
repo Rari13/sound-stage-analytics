@@ -11,6 +11,7 @@ import { DataImporter } from "@/components/DataImporter";
 import { MarketIntelligence } from "@/components/MarketIntelligence";
 import { DemandPrediction } from "@/components/DemandPrediction";
 import { EventSimulator } from "@/components/EventSimulator";
+import { YieldManagement } from "@/components/YieldManagement";
 import { PremiumGate } from "@/components/PremiumGate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -370,8 +371,12 @@ export default function OrganizerAnalytics() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="simulator" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="yield" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="yield" className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" />
+            Yield
+          </TabsTrigger>
           <TabsTrigger value="simulator" className="flex items-center gap-1">
             <Wand2 className="h-3 w-3" />
             Simulateur
@@ -383,6 +388,10 @@ export default function OrganizerAnalytics() {
           <TabsTrigger value="market">Marché</TabsTrigger>
           <TabsTrigger value="data">Données</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="yield" className="mt-4">
+          <YieldManagement organizerId={organizerId || ""} />
+        </TabsContent>
 
         <TabsContent value="simulator" className="mt-4">
           <EventSimulator organizerId={organizerId || ""} />
