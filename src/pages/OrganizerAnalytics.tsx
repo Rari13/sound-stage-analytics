@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, BarChart3, Send, MessageCircle } from "lucide-react";
+import { Brain, Users, MousePointerClick, Loader2, TrendingUp, Sparkles, BarChart3, Send, MessageCircle, Zap } from "lucide-react";
 import { DataImporter } from "@/components/DataImporter";
 import { MarketIntelligence } from "@/components/MarketIntelligence";
+import { DemandPrediction } from "@/components/DemandPrediction";
 import { PremiumGate } from "@/components/PremiumGate";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -368,18 +369,26 @@ export default function OrganizerAnalytics() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="data" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="data">Données</TabsTrigger>
+      <Tabs defaultValue="prediction" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="prediction" className="flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            Prédiction
+          </TabsTrigger>
           <TabsTrigger value="market">Marché</TabsTrigger>
+          <TabsTrigger value="data">Données</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="data" className="mt-4">
-          <DataImporter organizerId={organizerId || ""} />
+        <TabsContent value="prediction" className="mt-4">
+          <DemandPrediction organizerId={organizerId || ""} />
         </TabsContent>
 
         <TabsContent value="market" className="mt-4">
           <MarketIntelligence organizerId={organizerId || ""} />
+        </TabsContent>
+
+        <TabsContent value="data" className="mt-4">
+          <DataImporter organizerId={organizerId || ""} />
         </TabsContent>
       </Tabs>
     </div>
