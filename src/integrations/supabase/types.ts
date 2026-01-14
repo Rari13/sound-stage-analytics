@@ -14,6 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
+      artist_performances: {
+        Row: {
+          artist_id: string | null
+          artist_name: string
+          capacity: number | null
+          city: string
+          created_at: string | null
+          event_date: string
+          event_id: string | null
+          id: string
+          organizer_id: string | null
+          revenue_cents: number | null
+          tickets_sold: number | null
+          venue_id: string | null
+        }
+        Insert: {
+          artist_id?: string | null
+          artist_name: string
+          capacity?: number | null
+          city: string
+          created_at?: string | null
+          event_date: string
+          event_id?: string | null
+          id?: string
+          organizer_id?: string | null
+          revenue_cents?: number | null
+          tickets_sold?: number | null
+          venue_id?: string | null
+        }
+        Update: {
+          artist_id?: string | null
+          artist_name?: string
+          capacity?: number | null
+          city?: string
+          created_at?: string | null
+          event_date?: string
+          event_id?: string | null
+          id?: string
+          organizer_id?: string | null
+          revenue_cents?: number | null
+          tickets_sold?: number | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_performances_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_performances_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_performances_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_performances_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_performances_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venue_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artist_profiles: {
+        Row: {
+          created_at: string | null
+          external_popularity_score: number | null
+          genres: string[] | null
+          id: string
+          monthly_listeners: number | null
+          name: string
+          profile_vector: Json | null
+          social_followers: number | null
+          spotify_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_popularity_score?: number | null
+          genres?: string[] | null
+          id?: string
+          monthly_listeners?: number | null
+          name: string
+          profile_vector?: Json | null
+          social_followers?: number | null
+          spotify_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_popularity_score?: number | null
+          genres?: string[] | null
+          id?: string
+          monthly_listeners?: number | null
+          name?: string
+          profile_vector?: Json | null
+          social_followers?: number | null
+          spotify_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           address: string | null
@@ -73,6 +193,100 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      demand_predictions: {
+        Row: {
+          bass_curve: Json | null
+          calculated_at: string | null
+          competition_factor: number | null
+          confidence_interval_high: number | null
+          confidence_interval_low: number | null
+          demand_std_deviation: number | null
+          event_id: string | null
+          expected_demand: number | null
+          expires_at: string | null
+          f_sat: number | null
+          id: string
+          ipc_base: number | null
+          ipc_score: number | null
+          m_la: number | null
+          optimal_price_cents: number | null
+          organizer_id: string | null
+          recommended_price_cents: number | null
+          seasonality_factor: number | null
+          sell_out_probability: number | null
+          version: number | null
+          weather_factor: number | null
+        }
+        Insert: {
+          bass_curve?: Json | null
+          calculated_at?: string | null
+          competition_factor?: number | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          demand_std_deviation?: number | null
+          event_id?: string | null
+          expected_demand?: number | null
+          expires_at?: string | null
+          f_sat?: number | null
+          id?: string
+          ipc_base?: number | null
+          ipc_score?: number | null
+          m_la?: number | null
+          optimal_price_cents?: number | null
+          organizer_id?: string | null
+          recommended_price_cents?: number | null
+          seasonality_factor?: number | null
+          sell_out_probability?: number | null
+          version?: number | null
+          weather_factor?: number | null
+        }
+        Update: {
+          bass_curve?: Json | null
+          calculated_at?: string | null
+          competition_factor?: number | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          demand_std_deviation?: number | null
+          event_id?: string | null
+          expected_demand?: number | null
+          expires_at?: string | null
+          f_sat?: number | null
+          id?: string
+          ipc_base?: number | null
+          ipc_score?: number | null
+          m_la?: number | null
+          optimal_price_cents?: number | null
+          organizer_id?: string | null
+          recommended_price_cents?: number | null
+          seasonality_factor?: number | null
+          sell_out_probability?: number | null
+          version?: number | null
+          weather_factor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demand_predictions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demand_predictions_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demand_predictions_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -1149,6 +1363,66 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_profiles: {
+        Row: {
+          capacity: number | null
+          city: string
+          created_at: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          organizer_id: string | null
+          population: number | null
+          profile_vector: Json | null
+          updated_at: string | null
+          venue_name: string
+          venue_type: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          city: string
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          organizer_id?: string | null
+          population?: number | null
+          profile_vector?: Json | null
+          updated_at?: string | null
+          venue_name: string
+          venue_type?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          city?: string
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          organizer_id?: string | null
+          population?: number | null
+          profile_vector?: Json | null
+          updated_at?: string | null
+          venue_name?: string
+          venue_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_profiles_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_profiles_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_organizers_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       market_insights: {
@@ -1195,6 +1469,14 @@ export type Database = {
     Functions: {
       calculate_distance: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
+      calculate_f_sat: {
+        Args: { p_artist_name: string; p_city: string; p_population?: number }
+        Returns: number
+      }
+      calculate_saturation_pressure: {
+        Args: { p_artist_name: string; p_city: string; p_lambda?: number }
         Returns: number
       }
       generate_event_slug: {
