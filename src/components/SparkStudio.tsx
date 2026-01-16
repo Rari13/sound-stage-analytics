@@ -38,18 +38,21 @@ export function SparkStudio({ organizerId, isPremium }: SparkStudioProps) {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-flyer', {
+      const { data, error } = await supabase.functions.invoke('spark-studio-generate', {
         body: { style, vibe, format, organizerId }
       });
 
-      if (error) throw new Error(error.message || "Erreur de génération");
+      if (error) {
+        console.error("AI error:", error);
+        throw new Error(error.message || "Erreur de génération");
+      }
       if (data?.error) throw new Error(data.error);
       
       setGeneratedImage(data.url);
       toast.success("Visuel généré ! Ajoutez vos textes.");
     } catch (e: any) {
-      console.error(e);
-      toast.error(e.message);
+      console.error("AI error:", e);
+      toast.error(e.message || "Impossible de générer le visuel");
     } finally {
       setLoading(false);
     }
