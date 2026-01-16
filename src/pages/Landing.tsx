@@ -235,13 +235,13 @@ const Landing = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 mb-6">
               <Brain className="h-4 w-4 text-violet-500" />
-              <span className="text-sm font-medium text-violet-500">Powered by Data Science</span>
+              <span className="text-sm font-medium text-violet-500">Powered by Data & IA</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Des modèles <span className="bg-gradient-to-r from-violet-500 to-primary bg-clip-text text-transparent">mathématiques avancés</span>
+              Une intelligence <span className="bg-gradient-to-r from-violet-500 to-primary bg-clip-text text-transparent">qui vous comprend</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Notre IA s'appuie sur des modèles probabilistes éprouvés, utilisés par les leaders de l'industrie aérienne et hôtelière.
+              92% de précision sur le choix de l'événement qui correspond à la base client de votre club.
             </p>
           </div>
 
@@ -251,13 +251,10 @@ const Landing = () => {
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-5 group-hover:shadow-glow transition-all">
                 <TrendingUp className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">Modèle de Bass</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Prédit la courbe de diffusion des ventes en modélisant les comportements d'adoption précoce et imitation sociale.
+              <h3 className="font-bold text-lg mb-2">Prédiction des ventes</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Anticipez la courbe de ventes de vos billets grâce à l'analyse des comportements d'achat et tendances du marché.
               </p>
-              <div className="text-xs font-mono text-primary/70 bg-primary/5 px-3 py-2 rounded-lg">
-                F(t) = [1 - e^(-(p+q)t)] / [1 + (q/p)e^(-(p+q)t)]
-              </div>
             </div>
 
             {/* IPC Score */}
@@ -265,13 +262,10 @@ const Landing = () => {
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-5 group-hover:shadow-glow transition-all">
                 <Target className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">Score IPC</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Indice de Potentiel Commercial combinant popularité artiste, saturation marché et adéquation venue-genre.
+              <h3 className="font-bold text-lg mb-2">Matching artiste-public</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Identifiez les artistes qui correspondent parfaitement à votre audience grâce à notre score de compatibilité.
               </p>
-              <div className="text-xs font-mono text-primary/70 bg-primary/5 px-3 py-2 rounded-lg">
-                IPC = IPC_base × F_sat × M_LA
-              </div>
             </div>
 
             {/* Yield Management */}
@@ -279,13 +273,10 @@ const Landing = () => {
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-5 group-hover:shadow-glow transition-all">
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">Yield Management</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Optimisation dynamique des prix basée sur la vélocité des ventes et le ratio demande/capacité en temps réel.
+              <h3 className="font-bold text-lg mb-2">Prix dynamique</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Optimisez vos revenus automatiquement en ajustant vos prix selon la demande en temps réel.
               </p>
-              <div className="text-xs font-mono text-primary/70 bg-primary/5 px-3 py-2 rounded-lg">
-                ΔP = f(V_actual / V_expected)
-              </div>
             </div>
 
             {/* Probabilité Sell-out */}
@@ -293,23 +284,20 @@ const Landing = () => {
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-5 group-hover:shadow-glow transition-all">
                 <Calculator className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">Probabilité Sell-out</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Distribution normale approchée pour estimer la probabilité d'affichage complet selon la demande attendue.
+              <h3 className="font-bold text-lg mb-2">Proba de sold-out</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Évaluez instantanément vos chances d'afficher complet et ajustez votre stratégie en conséquence.
               </p>
-              <div className="text-xs font-mono text-primary/70 bg-primary/5 px-3 py-2 rounded-lg">
-                P(X ≥ C) = Φ((μ - C) / σ)
-              </div>
             </div>
           </div>
 
           {/* Bottom highlight */}
           <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-violet-500/10 via-primary/10 to-violet-500/10 border border-primary/20 text-center">
             <p className="text-lg font-medium mb-2">
-              +85% de précision dans les prédictions de remplissage
+              Des décisions data-driven pour maximiser votre succès
             </p>
             <p className="text-sm text-muted-foreground">
-              Nos modèles sont entraînés sur des milliers d'événements pour vous offrir les meilleures recommandations.
+              Notre IA analyse des milliers d'événements pour vous offrir les meilleures recommandations.
             </p>
           </div>
         </div>
