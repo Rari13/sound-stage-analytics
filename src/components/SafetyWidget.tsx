@@ -134,7 +134,7 @@ export function SafetyWidget() {
         <SheetTrigger asChild>
           <Button
             size="icon"
-            className="fixed bottom-24 right-4 md:bottom-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_hsl(217_91%_60%/0.4)] hover:bg-primary-hover hover:scale-105 transition-all duration-300 animate-in fade-in zoom-in"
+            className="fixed bottom-28 right-4 z-[60] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_hsl(var(--primary)/0.4)] hover:bg-primary-hover hover:scale-105 transition-all duration-300 animate-pulse-soft"
           >
             <Shield className="h-6 w-6" />
           </Button>
