@@ -2,94 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SPARK DESIGN SYSTEM - SILICON VALLEY EDITION
-   Clean, minimal, professional (Uber/Apple style)
-   Base: Pure White (#ffffff)
-   Accent: Jet Black (#000000)
+/* SPARK DESIGN SYSTEM - ATTENDFLOW INSPIRED
+   Modern SaaS aesthetic with violet/indigo palette
+   Primary: Vibrant Purple (#9b86f3)
+   Clean, rounded, professional
 */
 
 @layer base {
   :root {
-    /* Light mode - Clean & Professional with Electric Blue */
+    /* Light mode - Modern SaaS with Violet */
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 240 10% 10%;
 
-    /* Primary: Electric Blue */
-    --primary: 217 91% 60%;
+    /* Primary: Vibrant Violet */
+    --primary: 252 75% 75%;
+    --primary-hover: 252 75% 65%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light Gray */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
+    /* Secondary: Soft Gray */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 10%;
 
     /* Muted */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 5% 45%;
 
-    /* Accent: Electric Blue Light */
-    --accent: 217 91% 97%;
-    --accent-foreground: 217 91% 40%;
+    /* Accent: Light Violet */
+    --accent: 252 75% 97%;
+    --accent-hover: 252 75% 92%;
+    --accent-foreground: 252 75% 55%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     /* Borders */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 217 91% 60%;
+    --border: 240 5% 90%;
+    --input: 240 5% 90%;
+    --ring: 252 75% 75%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Success */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    /* Electric Blue variants */
-    --electric: 217 91% 60%;
-    --electric-glow: 217 91% 70%;
+    /* Violet variants */
+    --electric: 252 75% 75%;
+    --electric-glow: 252 75% 85%;
+
+    /* Gradients */
+    --gradient-start: 252 75% 75%;
+    --gradient-end: 280 80% 70%;
   }
 
   .dark {
-    --background: 0 0% 4%;
+    --background: 240 10% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 7%;
+    --card: 240 10% 7%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 4%;
+    --popover: 240 10% 4%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary: Electric Blue */
-    --primary: 217 91% 60%;
+    /* Primary: Vibrant Violet */
+    --primary: 252 75% 70%;
+    --primary-hover: 252 75% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 15%;
+    --secondary: 240 10% 15%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 240 10% 15%;
+    --muted-foreground: 240 5% 64%;
 
-    /* Accent: Electric Blue Dark */
-    --accent: 217 91% 15%;
-    --accent-foreground: 217 91% 70%;
+    /* Accent: Dark Violet */
+    --accent: 252 75% 15%;
+    --accent-hover: 252 75% 20%;
+    --accent-foreground: 252 75% 80%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 217 91% 60%;
+    --border: 240 10% 18%;
+    --input: 240 10% 18%;
+    --ring: 252 75% 70%;
 
-    /* Electric Blue variants */
-    --electric: 217 91% 60%;
-    --electric-glow: 217 91% 70%;
+    /* Violet variants */
+    --electric: 252 75% 70%;
+    --electric-glow: 252 75% 80%;
   }
 }
 
@@ -103,14 +111,14 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography - Clean Silicon Valley */
+  /* Typography - Modern SaaS */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-foreground;
+    @apply font-bold tracking-tight text-foreground;
   }
 
-  h1 { @apply text-2xl md:text-4xl; }
-  h2 { @apply text-xl md:text-2xl; }
-  h3 { @apply text-lg md:text-xl; }
+  h1 { @apply text-3xl md:text-5xl; }
+  h2 { @apply text-2xl md:text-3xl; }
+  h3 { @apply text-xl md:text-2xl; }
 
   /* Mobile optimizations */
   input, textarea, select, button {
@@ -123,23 +131,50 @@
 }
 
 @layer utilities {
-  /* Subtle hover effect */
+  /* Hover lift effect */
   .hover-lift {
-    @apply transition-all duration-200 ease-out;
+    @apply transition-all duration-300 ease-out;
   }
   
   .hover-lift:hover {
-    @apply -translate-y-0.5 shadow-lg;
+    @apply -translate-y-1 shadow-xl;
   }
 
-  /* Clean card style */
+  /* Modern card style with soft shadow */
   .card-clean {
-    @apply bg-card border border-border rounded-xl p-6 shadow-sm;
+    @apply bg-card border border-border rounded-2xl p-6 shadow-soft;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border border-border/50;
   }
 
   /* Subtle border */
   .border-subtle {
     @apply border border-border/50;
+  }
+
+  /* Gradient background */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(280 80% 70%) 100%);
+  }
+
+  /* Soft shadows */
+  .shadow-soft {
+    box-shadow: 0 2px 8px hsl(252 75% 75% / 0.05), 0 4px 20px hsl(0 0% 0% / 0.03);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px hsl(252 75% 75% / 0.3), 0 4px 20px hsl(0 0% 0% / 0.08);
+  }
+
+  /* Grid background pattern */
+  .bg-grid {
+    background-image: 
+      linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }
 
@@ -154,12 +189,12 @@
   }
 
   @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.4s ease-out forwards;
+    animation: fade-in-up 0.5s ease-out forwards;
   }
 
   @keyframes fade-in {
@@ -168,7 +203,7 @@
   }
 
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.4s ease-out;
   }
 
   @keyframes slide-up {
@@ -177,7 +212,25 @@
   }
 
   .animate-slide-up {
-    animation: slide-up 0.3s ease-out;
+    animation: slide-up 0.4s ease-out;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
   }
 
   /* Skeleton loading */
@@ -199,7 +252,7 @@
   }
 
   .floating-input {
-    @apply w-full h-14 px-4 pt-5 pb-2 text-base bg-background border border-border rounded-xl;
+    @apply w-full h-14 px-4 pt-5 pb-2 text-base bg-background border border-border rounded-2xl;
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
     @apply transition-all duration-200 ease-out;
     @apply peer;
@@ -234,6 +287,24 @@
   }
 }
 
+/* Modern button styles */
+@layer components {
+  .btn-primary-gradient {
+    @apply relative overflow-hidden rounded-full font-semibold;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(280 80% 70%) 100%);
+  }
+
+  .btn-primary-gradient::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, hsl(280 80% 70%) 0%, hsl(var(--primary)) 100%);
+  }
+
+  .btn-primary-gradient:hover::before {
+    @apply opacity-100;
+  }
+}
+
 /* Safe area for fixed bottom elements */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-bottom {
@@ -243,6 +314,28 @@
 
 /* Thumb zone bar */
 .thumb-zone-bar {
-  @apply fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-lg border-t border-border;
+  @apply fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-border;
   @apply safe-bottom;
+}
+
+/* Curved section decorative */
+.curved-section {
+  position: relative;
+}
+
+.curved-section::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: inherit;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+
+/* Badge floating animation */
+.badge-float {
+  @apply shadow-lg rounded-full px-4 py-2 bg-background border border-border;
+  animation: float 3s ease-in-out infinite;
 }

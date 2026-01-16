@@ -42,29 +42,32 @@ export default function OrganizerLayout({ children }: OrganizerLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Subtle grid background */}
+      <div className="fixed inset-0 bg-grid opacity-30 pointer-events-none" />
+      
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
+      <header className="sticky top-0 z-30 glass border-b border-border/50">
+        <div className="flex items-center justify-between h-16 px-4 max-w-lg mx-auto">
           <div className="flex items-center gap-3">
             {loading ? (
               <>
-                <Skeleton className="h-9 w-9 rounded-full" />
-                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-lg" />
               </>
             ) : (
               <>
                 <Avatar
-                  className="h-9 w-9 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/40"
+                  className="h-10 w-10 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/40 hover:shadow-glow"
                   onClick={() => navigate("/orga/profile")}
                 >
                   <AvatarImage src={organizer?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white font-semibold text-sm">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-sm leading-tight">{organizer?.name}</p>
-                  <p className="text-[10px] text-muted-foreground">Organisateur</p>
+                  <p className="font-bold text-sm leading-tight">{organizer?.name}</p>
+                  <p className="text-xs text-muted-foreground">Organisateur</p>
                 </div>
               </>
             )}
@@ -73,7 +76,7 @@ export default function OrganizerLayout({ children }: OrganizerLayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6 pb-32 max-w-lg mx-auto">
+      <main className="relative px-4 py-6 pb-32 max-w-lg mx-auto">
         {children}
       </main>
 
