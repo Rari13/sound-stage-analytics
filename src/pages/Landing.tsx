@@ -59,8 +59,7 @@ const Landing = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={sparkLogo} alt="Spark Events" className="h-8 w-8" />
+          <Link to="/" className="flex items-center">
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-violet-600 bg-clip-text text-transparent">
               Spark Events
             </span>
@@ -359,8 +358,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-border bg-secondary/30">
         <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={sparkLogo} alt="Spark Events" className="h-6 w-6" />
+          <div className="flex items-center justify-center mb-4">
             <span className="font-bold text-lg">Spark Events</span>
           </div>
           <p className="text-sm text-muted-foreground">
