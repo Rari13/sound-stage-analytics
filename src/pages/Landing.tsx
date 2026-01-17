@@ -1,11 +1,82 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Users, Sparkles, Brain, CreditCard, Heart, Star, Zap, CheckCircle, TrendingUp, BarChart3, Target, Calculator } from "lucide-react";
+import {
+  ArrowRight,
+  Shield,
+  Users,
+  Sparkles,
+  Brain,
+  CreditCard,
+  Heart,
+  Star,
+  Zap,
+  CheckCircle,
+  TrendingUp,
+  BarChart3,
+  Target,
+  Calculator,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import sparkLogo from "@/assets/spark-logo.png";
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"client" | "organizer">("client");
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const routeLoggedInUser = async () => {
+      // 1) Try to read role from DB
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      let role = (!error && data?.role ? String(data.role) : null) as
+        | "client"
+        | "organizer"
+        | "scan_agent"
+        | "admin"
+        | null;
+
+      // 2) If role missing (common for OAuth signups), provision it from local intent
+      if (!role) {
+        const pendingRole = localStorage.getItem("pending_role");
+        if (pendingRole === "client" || pendingRole === "organizer") {
+          const { error: insertError } = await supabase.from("user_roles").insert({
+            user_id: user.id,
+            role: pendingRole,
+          });
+
+          if (!insertError) {
+            role = pendingRole;
+          }
+        }
+      }
+
+      if (cancelled) return;
+
+      // Clear intent once we handled it (even if role was already set)
+      localStorage.removeItem("pending_role");
+
+      if (role === "client") navigate("/client/home", { replace: true });
+      else if (role === "organizer") navigate("/orga/home", { replace: true });
+    };
+
+    routeLoggedInUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, navigate]);
 
   const clientFeatures = [
     {

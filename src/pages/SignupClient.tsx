@@ -30,7 +30,8 @@ const SignupClient = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      // If already logged in, go to the right dashboard (default: client)
+      navigate("/client/home");
     }
   }, [user, navigate]);
 
@@ -89,8 +90,12 @@ const SignupClient = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    // Remember intent: this Google OAuth entrypoint is a *client* signup.
+    localStorage.setItem("pending_role", "client");
+
     const { error } = await signInWithGoogle();
     if (error) {
+      localStorage.removeItem("pending_role");
       toast({
         title: "Erreur",
         description: error.message,
