@@ -1969,19 +1969,6 @@ export type Database = {
       }
     }
     Views: {
-      market_insights: {
-        Row: {
-          genre: string | null
-          mois: string | null
-          nb_evenements: number | null
-          nb_organisateurs: number | null
-          prix_moyen_marche: number | null
-          remplissage_moyen: number | null
-          total_volume_billets: number | null
-          ville: string | null
-        }
-        Relationships: []
-      }
       public_organizers_view: {
         Row: {
           avatar_url: string | null
@@ -2036,6 +2023,19 @@ export type Database = {
           remplissage: number
           trend_status: string
           volume_billets: number
+        }[]
+      }
+      get_secure_market_insights: {
+        Args: { target_city?: string; target_genre?: string }
+        Returns: {
+          genre: string
+          mois: string
+          nb_evenements: number
+          nb_organisateurs: number
+          prix_moyen_marche: number
+          remplissage_moyen: number
+          total_volume_billets: number
+          ville: string
         }[]
       }
       has_role: {
