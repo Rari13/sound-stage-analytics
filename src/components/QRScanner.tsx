@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Camera, X, AlertCircle } from "lucide-react";
+import { Camera, X, AlertCircle, Shield } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 
 interface QRScannerProps {
@@ -10,16 +10,40 @@ interface QRScannerProps {
   onClose: () => void;
 }
 
+// Check if we're in a secure context (HTTPS or localhost)
+const isSecureContext = (): boolean => {
+  return window.isSecureContext || 
+         window.location.protocol === 'https:' || 
+         window.location.hostname === 'localhost' ||
+         window.location.hostname === '127.0.0.1';
+};
+
+// Check if MediaDevices API is available
+const isMediaDevicesSupported = (): boolean => {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+};
+
 export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsHttpsRedirect, setNeedsHttpsRedirect] = useState(false);
 
   useEffect(() => {
+    // Check secure context on mount
+    if (!isSecureContext()) {
+      setNeedsHttpsRedirect(true);
+    }
+    
     return () => {
       handleStop();
     };
   }, []);
+
+  const handleHttpsRedirect = () => {
+    const httpsUrl = window.location.href.replace('http:', 'https:');
+    window.location.href = httpsUrl;
+  };
 
   const handleStop = async () => {
     if (scannerRef.current && isScanning) {
@@ -37,13 +61,16 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
   const handleStartScan = async () => {
     setError(null);
 
-    // Check HTTPS requirement (critical for Safari iOS)
-    const isSecure = window.location.protocol === 'https:' || 
-                     window.location.hostname === 'localhost' ||
-                     window.location.hostname === '127.0.0.1';
-    
-    if (!isSecure) {
-      setError("⚠️ Safari nécessite HTTPS. Utilisez le lien publié de votre app.");
+    // Check secure context (critical for iOS Safari)
+    if (!isSecureContext()) {
+      setNeedsHttpsRedirect(true);
+      setError("⚠️ Safari iOS nécessite HTTPS. Cliquez sur 'Passer en HTTPS' ci-dessous.");
+      return;
+    }
+
+    // Check MediaDevices API availability
+    if (!isMediaDevicesSupported()) {
+      setError("❌ L'API caméra n'est pas disponible sur ce navigateur. Utilisez Safari ou Chrome.");
       return;
     }
 
@@ -85,13 +112,18 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
       console.error("Camera start error:", err);
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError("❌ Accès caméra refusé. Dans Safari: Réglages > Safari > Caméra > Autoriser");
+        setError("❌ Accès caméra refusé. Sur iOS: Réglages > Safari > Caméra > Autoriser");
       } else if (err.name === 'NotFoundError') {
         setError("❌ Aucune caméra détectée sur cet appareil.");
       } else if (err.name === 'NotReadableError') {
         setError("❌ Caméra déjà utilisée. Fermez les autres apps et réessayez.");
+      } else if (err.name === 'OverconstrainedError') {
+        setError("❌ La caméra ne supporte pas les paramètres demandés.");
+      } else if (err.name === 'SecurityError') {
+        setError("❌ Erreur de sécurité. Assurez-vous d'utiliser HTTPS.");
+        setNeedsHttpsRedirect(true);
       } else {
-        setError(`❌ Erreur Safari: ${err.message || "Vérifiez que vous êtes en HTTPS"}`);
+        setError(`❌ Erreur: ${err.message || "Vérifiez que vous êtes en HTTPS"}`);
       }
       
       setIsScanning(false);
@@ -110,7 +142,26 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
         </Button>
       </div>
 
-      {error && (
+      {/* HTTPS Redirect Alert */}
+      {needsHttpsRedirect && (
+        <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
+          <Shield className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <p className="font-medium mb-2">🔒 Connexion sécurisée requise</p>
+            <p className="text-sm mb-3">Safari iOS exige HTTPS pour accéder à la caméra.</p>
+            <Button 
+              onClick={handleHttpsRedirect} 
+              size="sm" 
+              className="w-full bg-amber-600 hover:bg-amber-700"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Passer en HTTPS
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {error && !needsHttpsRedirect && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -124,6 +175,7 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
             className="w-full"
             size="lg"
             variant="accent"
+            disabled={needsHttpsRedirect}
           >
             <Camera className="h-5 w-5 mr-2" />
             📸 Ouvrir la caméra
