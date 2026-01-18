@@ -43,40 +43,46 @@ export default function OrganizerLayout({ children }: OrganizerLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Subtle grid background */}
-      <div className="fixed inset-0 bg-grid opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none" />
       
-      {/* Header */}
-      <header className="sticky top-0 z-30 glass border-b border-border/50">
-        <div className="flex items-center justify-between h-16 px-4 max-w-lg mx-auto">
-          <div className="flex items-center gap-3">
-            {loading ? (
-              <>
+      {/* Native-style header with safe area for notch/Dynamic Island */}
+      <header className="sticky top-0 z-30 glass border-b border-border/30 safe-area-top">
+        <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
+          {loading ? (
+            <>
+              <div className="flex items-center gap-3">
                 <Skeleton className="h-10 w-10 rounded-full" />
-                <Skeleton className="h-5 w-24 rounded-lg" />
-              </>
-            ) : (
-              <>
-                <Avatar
-                  className="h-10 w-10 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/40 hover:shadow-glow"
-                  onClick={() => navigate("/orga/profile")}
-                >
-                  <AvatarImage src={organizer?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white font-semibold text-sm">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-bold text-sm leading-tight">{organizer?.name}</p>
-                  <p className="text-xs text-muted-foreground">Organisateur</p>
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-24 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Avatar
+                className="h-10 w-10 cursor-pointer ring-2 ring-primary/20 transition-all active:scale-95 active:ring-primary/40"
+                onClick={() => navigate("/orga/profile")}
+              >
+                <AvatarImage src={organizer?.avatar_url || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white font-semibold text-sm">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-bold text-sm leading-tight">{organizer?.name}</p>
+                <p className="text-xs text-muted-foreground">Organisateur</p>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative px-4 py-6 pb-32 max-w-lg mx-auto">
+      {/* Main Content with native scroll - extra padding for FAB */}
+      <main className="relative px-4 py-4 max-w-lg mx-auto native-scroll scrollbar-hide" 
+        style={{ 
+          paddingBottom: `calc(8rem + env(safe-area-inset-bottom, 0px))` 
+        }}>
         {children}
       </main>
 
