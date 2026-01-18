@@ -15,18 +15,22 @@ export function OrganizerNav() {
 
   return (
     <>
-      {/* Floating Action Button */}
+      {/* Floating Action Button - positioned above nav with safe area */}
       <Button
         onClick={() => navigate("/orga/events/create")}
-        className="fixed bottom-24 right-4 z-50 h-14 w-14 rounded-full shadow-glow hover:shadow-strong animate-pulse-glow"
-        variant="accent"
+        className="fixed z-50 h-14 w-14 rounded-full shadow-glow tap-effect"
+        style={{ 
+          bottom: `calc(5rem + env(safe-area-inset-bottom, 0px))`,
+          right: '1rem'
+        }}
+        variant="default"
         size="icon"
       >
         <Plus className="h-6 w-6" />
       </Button>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-border/50 safe-area-pb">
+      {/* Native-style bottom navigation */}
+      <nav className="native-nav">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {navItems.map((item) => (
             <NavLink
@@ -34,10 +38,10 @@ export function OrganizerNav() {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition-all duration-300 min-w-[64px]",
+                  "flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-200 min-w-[64px] tap-effect",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground active:text-foreground"
                 )
               }
             >
@@ -45,13 +49,24 @@ export function OrganizerNav() {
                 <>
                   <div
                     className={cn(
-                      "p-2 rounded-xl transition-all duration-300",
-                      isActive && "bg-gradient-to-br from-primary/20 to-violet-500/20 shadow-soft"
+                      "p-2 rounded-xl transition-all duration-200",
+                      isActive && "bg-primary/15 shadow-sm"
                     )}
                   >
-                    <item.icon className={cn("h-5 w-5 transition-transform duration-300", isActive && "scale-110")} />
+                    <item.icon 
+                      className={cn(
+                        "h-5 w-5 transition-transform duration-200", 
+                        isActive && "scale-105"
+                      )} 
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
                   </div>
-                  <span className="text-[10px] font-semibold">{item.label}</span>
+                  <span className={cn(
+                    "text-[10px] font-medium transition-all",
+                    isActive && "font-semibold"
+                  )}>
+                    {item.label}
+                  </span>
                 </>
               )}
             </NavLink>
