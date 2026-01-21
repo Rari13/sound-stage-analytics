@@ -74,60 +74,70 @@ export const QRScanner = ({ onScanSuccess, onClose }: QRScannerProps) => {
       return;
     }
 
-    try {
-      // Initialize scanner
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("qr-reader");
-      }
-
-      // Start scanning with back camera (environment) - iOS compatible config
-      await scannerRef.current.start(
-        { facingMode: "environment" }, // Back camera
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        },
-        (decodedText) => {
-          // Success callback
-          onScanSuccess(decodedText);
-          handleStop();
-        },
-        (errorMessage) => {
-          // Error callback - ignore "no QR found" errors
-          if (!errorMessage.includes("NotFoundException")) {
-            console.debug("QR scan error:", errorMessage);
-          }
+    // Give React a moment to render the DOM element
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById("qr-reader");
+        if (!element) {
+          setError("❌ Erreur d'affichage : l'élément de scan n'a pas été trouvé. Réessayez.");
+          setIsScanning(false);
+          return;
         }
-      );
-      
-      setIsScanning(true);
-      setError(null);
-    } catch (err: any) {
-      console.error("Camera start error:", err);
-      
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError("❌ Accès caméra refusé. Sur iOS: Réglages > Safari > Caméra > Autoriser");
-      } else if (err.name === 'NotFoundError') {
-        setError("❌ Aucune caméra détectée sur cet appareil.");
-      } else if (err.name === 'NotReadableError') {
-        setError("❌ Caméra déjà utilisée. Fermez les autres apps et réessayez.");
-      } else if (err.name === 'OverconstrainedError') {
-        setError("❌ La caméra ne supporte pas les paramètres demandés.");
-      } else if (err.name === 'SecurityError') {
-        setError("❌ Erreur de sécurité. Assurez-vous d'utiliser HTTPS.");
-        setNeedsHttpsRedirect(true);
-      } else {
-        setError(`❌ Erreur: ${err.message || "Vérifiez que vous êtes en HTTPS"}`);
+
+        // Initialize scanner
+        if (!scannerRef.current) {
+          scannerRef.current = new Html5Qrcode("qr-reader");
+        }
+
+        // Start scanning with back camera (environment) - iOS compatible config
+        await scannerRef.current.start(
+          { facingMode: "environment" }, // Back camera
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            videoConstraints: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          },
+          (decodedText) => {
+            // Success callback
+            onScanSuccess(decodedText);
+            handleStop();
+          },
+          (errorMessage) => {
+            // Error callback - ignore "no QR found" errors
+            if (!errorMessage.includes("NotFoundException")) {
+              console.debug("QR scan error:", errorMessage);
+            }
+          }
+        );
+        
+        setIsScanning(true);
+        setError(null);
+      } catch (err: any) {
+        console.error("Camera start error:", err);
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setError("❌ Accès caméra refusé. Sur iOS: Réglages > Safari > Caméra > Autoriser");
+        } else if (err.name === 'NotFoundError') {
+          setError("❌ Aucune caméra détectée sur cet appareil.");
+        } else if (err.name === 'NotReadableError') {
+          setError("❌ Caméra déjà utilisée. Fermez les autres apps et réessayez.");
+        } else if (err.name === 'OverconstrainedError') {
+          setError("❌ La caméra ne supporte pas les paramètres demandés.");
+        } else if (err.name === 'SecurityError') {
+          setError("❌ Erreur de sécurité. Assurez-vous d'utiliser HTTPS.");
+          setNeedsHttpsRedirect(true);
+        } else {
+          setError(`❌ Erreur: ${err.message || "Vérifiez que vous êtes en HTTPS"}`);
+        }
+        
+        setIsScanning(false);
       }
-      
-      setIsScanning(false);
-    }
+    }, 100);
   };
 
   return (
