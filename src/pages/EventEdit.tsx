@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BannerUpload } from "@/components/BannerUpload";
+import { buildShareableUrl } from "@/lib/urlUtils";
 
 interface PriceTier {
   id?: string;
@@ -302,7 +303,7 @@ const EventEdit = () => {
   };
 
   const copyShareableLink = () => {
-    const link = `${window.location.origin}/events/${eventSlug}`;
+    const link = buildShareableUrl(`/events/${eventSlug}`);
     navigator.clipboard.writeText(link);
     toast({
       title: "Lien copié",
@@ -318,7 +319,7 @@ const EventEdit = () => {
     );
   }
 
-  const shareableLink = `${window.location.origin}/events/${eventSlug}`;
+  const shareableLink = buildShareableUrl(`/events/${eventSlug}`);
 
   return (
     <div className="min-h-screen p-4 md:p-8">
