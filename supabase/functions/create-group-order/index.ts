@@ -99,7 +99,7 @@ serve(async (req) => {
     logStep("Participants added", { count: participants.length });
 
     // Generate share URL - use production Vercel URL for native apps
-    const origin = "https://spark-events-analytics.vercel.app";
+    const origin = "https://sound-stage-analytics.vercel.app";
     const shareUrl = `${origin}/group-pay/${groupOrder.share_code}`;
 
     return new Response(

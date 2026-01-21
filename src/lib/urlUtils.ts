@@ -1,5 +1,5 @@
 // URL de production Vercel - TOUJOURS utilisée pour les liens partageables
-const PRODUCTION_URL = "https://spark-events-analytics.vercel.app";
+const PRODUCTION_URL = "https://sound-stage-analytics.vercel.app";
 
 /**
  * Retourne l'URL publique pour les liens partageables

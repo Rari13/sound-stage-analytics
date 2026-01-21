@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2, Link2, Copy, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
-import { QRScannerNative } from "@/components/QRScannerNative";
+import { QRScanner } from "@/components/QRScanner";
 import { buildShareableUrl } from "@/lib/urlUtils";
 
 export default function OrganizerScan() {
@@ -271,7 +271,7 @@ export default function OrganizerScan() {
         <div className="flex-1 flex flex-col p-4 gap-4 overflow-auto">
           {showScanner ? (
             <div className="flex-1">
-              <QRScannerNative
+              <QRScanner
                 onScanSuccess={(code) => {
                   setShowScanner(false);
                   validateTicket(code);
