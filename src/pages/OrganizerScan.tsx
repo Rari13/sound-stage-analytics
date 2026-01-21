@@ -458,7 +458,12 @@ export default function OrganizerScan() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyLink(link.token)}>
                     <Copy className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(`/scan/${link.token}`, '_blank')}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={() => window.open(buildShareableUrl(`/scan/${link.token}`), '_blank')}
+                  >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deactivateLink(link.id)}>

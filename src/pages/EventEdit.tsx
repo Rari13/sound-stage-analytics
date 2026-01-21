@@ -311,6 +311,31 @@ const EventEdit = () => {
     });
   };
 
+  const shareEventLink = async () => {
+    const link = buildShareableUrl(`/events/${eventSlug}`);
+
+    const shareData = {
+      title: formData.title || "Événement",
+      text: formData.title ? `Achetez vos billets : ${formData.title}` : "Achetez vos billets",
+      url: link,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // annulation utilisateur
+      }
+    }
+
+    await navigator.clipboard.writeText(link);
+    toast({
+      title: "Lien copié",
+      description: "Partagez ce lien : il ouvre la page client (achat de billets)",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -355,6 +380,15 @@ const EventEdit = () => {
                     onClick={copyShareableLink}
                   >
                     <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={shareEventLink}
+                    title="Partager"
+                  >
+                    <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
