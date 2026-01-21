@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Scan, Plus, Smartphone, CheckCircle2, XCircle, AlertCircle, Camera, Trash2, Link2, Copy, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { QRScannerNative } from "@/components/QRScannerNative";
+import { buildShareableUrl } from "@/lib/urlUtils";
 
 export default function OrganizerScan() {
   const { user } = useAuth();
@@ -141,7 +142,7 @@ export default function OrganizerScan() {
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      const link = `${window.location.origin}/scan/${data.token}`;
+      const link = buildShareableUrl(`/scan/${data.token}`);
       await navigator.clipboard.writeText(link);
       toast({ title: "Lien copié !", description: "Valide 24h" });
       await loadOrganizerData();
@@ -150,7 +151,7 @@ export default function OrganizerScan() {
   };
 
   const copyLink = async (token: string) => {
-    const link = `${window.location.origin}/scan/${token}`;
+    const link = buildShareableUrl(`/scan/${token}`);
     await navigator.clipboard.writeText(link);
     toast({ title: "Copié !" });
   };

@@ -11,6 +11,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { GroupPayModal } from "@/components/GroupPayModal";
 import { CartDrawer } from "@/components/CartDrawer";
+import { buildShareableUrl } from "@/lib/urlUtils";
 
 interface Event {
   id: string;
@@ -313,10 +314,11 @@ const EventDetails = () => {
             variant="outline"
             className="w-full rounded-2xl h-12"
             onClick={async () => {
+              const eventUrl = buildShareableUrl(`/events/${slug}`);
               const shareData = {
                 title: event.title,
                 text: `${event.title} - ${format(new Date(event.starts_at), "d MMMM yyyy", { locale: fr })} à ${event.venue}`,
-                url: window.location.href,
+                url: eventUrl,
               };
               
               if (navigator.share) {
@@ -326,7 +328,7 @@ const EventDetails = () => {
                   // User cancelled or error
                 }
               } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await navigator.clipboard.writeText(eventUrl);
                 toast.success("Lien copié !");
               }
             }}
