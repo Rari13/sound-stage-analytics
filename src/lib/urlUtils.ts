@@ -1,20 +1,39 @@
-// URL de production Vercel - TOUJOURS utilisée pour les liens partageables
-const PRODUCTION_URL = "https://sound-stage-analytics.vercel.app";
+// URL de production configurable via variable d'environnement
+// Fallback automatique selon l'environnement
+const getProductionUrl = (): string => {
+  // Priorité 1: Variable d'environnement explicite
+  if (import.meta.env.VITE_PUBLIC_URL) {
+    return (import.meta.env.VITE_PUBLIC_URL as string).replace(/\/$/, ''); // Remove trailing slash
+  }
+  
+  // Priorité 2: En production Vercel, utiliser l'origine actuelle
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    // Exclure les environnements non-production
+    if (!origin.includes('localhost') &&
+        !origin.includes('lovable') &&
+        !origin.includes('capacitor') &&
+        origin.includes('vercel.app')) {
+      return origin;
+    }
+  }
+  
+  // Fallback: URL par défaut
+  return "https://spark-events-analytics.vercel.app";
+};
 
 /**
  * Retourne l'URL publique pour les liens partageables
- * TOUJOURS l'URL Vercel pour garantir des liens cohérents
  */
 export const getPublicUrl = (): string => {
-  return PRODUCTION_URL;
+  return getProductionUrl();
 };
 
 /**
  * Construit une URL complète avec le chemin spécifié
- * Utilise toujours l'URL Vercel de production
+ * Utilise l'URL de production configurée
  */
 export const buildShareableUrl = (path: string): string => {
-  // S'assurer que le path commence par /
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${PRODUCTION_URL}${normalizedPath}`;
+  return `${getProductionUrl()}${normalizedPath}`;
 };

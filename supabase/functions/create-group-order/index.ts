@@ -98,8 +98,8 @@ serve(async (req) => {
 
     logStep("Participants added", { count: participants.length });
 
-    // Generate share URL - use production Vercel URL for native apps
-    const origin = "https://sound-stage-analytics.vercel.app";
+    // Generate share URL - use PUBLIC_URL env var or fallback
+    const origin = Deno.env.get("PUBLIC_URL") || "https://spark-events-analytics.vercel.app";
     const shareUrl = `${origin}/group-pay/${groupOrder.share_code}`;
 
     return new Response(
