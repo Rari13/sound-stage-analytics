@@ -11,29 +11,39 @@ interface QRScannerNativeProps {
   onClose: () => void;
 }
 
-const isIOSNative = (): boolean => {
-  return Capacitor.getPlatform() === 'ios';
-};
-
 export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const setTransparency = (active: boolean) => {
+    console.log(`[Scanner] Setting transparency: ${active}`);
+    const elements = [document.body, document.documentElement, document.getElementById('root')];
+    
+    elements.forEach(el => {
+      if (el) {
+        if (active) {
+          el.style.setProperty('background-color', 'transparent', 'important');
+          el.style.setProperty('background', 'transparent', 'important');
+          el.classList.add('camera-running');
+        } else {
+          el.style.removeProperty('background-color');
+          el.style.removeProperty('background');
+          el.classList.remove('camera-running');
+        }
+      }
+    });
+  };
+
   const cleanup = useCallback(async () => {
+    console.log("[Scanner] Cleaning up...");
     try {
-      // Retirer la classe de transparence
-      document.body.classList.remove('camera-running');
-      
-      // Arrêter le plugin de caméra
+      setTransparency(false);
       await CameraView.stop();
-      
-      // Supprimer tous les écouteurs d'événements
       await CameraView.removeAllListeners();
-      
       setIsScanning(false);
     } catch (err) {
-      console.error("Error during cleanup:", err);
+      console.error("[Scanner] Cleanup error:", err);
     }
   }, []);
 
@@ -44,35 +54,38 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   }, [cleanup]);
 
   const startScan = async () => {
+    console.log("[Scanner] Starting scan process...");
     setError(null);
     setIsLoading(true);
 
     try {
-      // 1. Ajouter l'écouteur pour la détection de code-barres
+      // 1. Configurer l'écouteur
       await CameraView.addListener('barcodeDetected', (data: any) => {
+        console.log('[Scanner] Barcode detected!', data);
         if (data && data.value) {
-          console.log('Barcode detected:', data.value);
           cleanup();
           onScanSuccess(data.value);
         }
       });
 
-      // 2. Démarrer la caméra avec détection de code-barres
+      // 2. Appliquer la transparence AVANT de démarrer
+      setTransparency(true);
+
+      // 3. Démarrer la caméra (Force Rear Camera)
+      console.log("[Scanner] Calling CameraView.start...");
       await CameraView.start({ 
         enableBarcodeDetection: true,
-        position: 'rear' // Utiliser la caméra arrière par défaut
+        position: 'rear'
       });
-
-      // 3. Rendre la WebView transparente pour voir la caméra en dessous
-      document.body.classList.add('camera-running');
       
+      console.log("[Scanner] Camera started successfully");
       setIsScanning(true);
       setIsLoading(false);
     } catch (err: any) {
-      console.error("Scanner error:", err);
-      cleanup();
+      console.error("[Scanner] Start error:", err);
+      setTransparency(false);
       setIsLoading(false);
-      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra native'}`);
+      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
     }
   };
 
@@ -82,81 +95,91 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   };
 
   return (
-    <Card className="p-4 space-y-4 bg-background/80 backdrop-blur-sm relative z-50">
+    <Card className="p-4 space-y-4 bg-background/90 backdrop-blur-md relative z-[9999] border-2 border-primary/20 shadow-2xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CameraIcon className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Scanner QR Code (Natif)</span>
+          <div className="bg-primary/10 p-2 rounded-full">
+            <CameraIcon className="h-5 w-5 text-primary" />
+          </div>
+          <span className="font-bold text-lg">Scanner de Billets</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleStop}>
-          <X className="h-4 w-4" />
+        <Button variant="ghost" size="icon" onClick={handleStop} className="rounded-full hover:bg-destructive/10 hover:text-destructive">
+          <X className="h-5 w-5" />
         </Button>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {!isScanning ? (
-        <div className="space-y-4">
+        <div className="space-y-6 py-4">
+          <div className="text-center space-y-2">
+            <p className="text-muted-foreground text-sm">Prêt pour la validation des accès</p>
+          </div>
           <Button
             onClick={startScan}
-            className="w-full h-14 text-lg"
+            className="w-full h-16 text-xl font-bold shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="h-6 w-6 mr-2 animate-spin" />
+              <Loader2 className="h-6 w-6 mr-3 animate-spin" />
             ) : (
-              <CameraIcon className="h-6 w-6 mr-2" />
+              <CameraIcon className="h-6 w-6 mr-3" />
             )}
-            {isLoading ? "Initialisation..." : "Lancer le Scanner"}
+            {isLoading ? "Initialisation..." : "Ouvrir la Caméra"}
           </Button>
           
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Smartphone className="h-4 w-4" />
-            {isIOSNative() ? "iOS Natif" : "Android Natif"} ✅
+          <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
+            <Smartphone className="h-3 w-3" />
+            Mode Natif iOS Optimisé
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* 
-            Note: Avec capacitor-camera-view, la vidéo est affichée SOUS la WebView.
-            On affiche ici un overlay de visée transparent.
-          */}
-          <div className="relative w-full rounded-xl overflow-hidden border-2 border-primary/50" style={{ minHeight: "300px", backgroundColor: "transparent" }}>
-            {/* Overlay de visée */}
+        <div className="space-y-6">
+          <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-4 border-primary/30 bg-transparent">
+            {/* Overlay de visée amélioré */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="relative w-48 h-48">
-                <div className="absolute inset-0 border-2 border-white/30 rounded-lg" />
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
+              <div className="relative w-64 h-64">
+                {/* Coins animés */}
+                <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-3xl animate-pulse" />
+                <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-3xl animate-pulse" />
+                <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-3xl animate-pulse" />
+                <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-3xl animate-pulse" />
+                
+                {/* Ligne de scan animée */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_15px_rgba(var(--primary),0.5)] animate-[scan_2s_linear_infinite]" />
               </div>
             </div>
             
-            <div className="absolute bottom-4 left-0 right-0 text-center">
-              <p className="text-white text-sm font-medium drop-shadow-md bg-black/20 py-1 px-2 inline-block rounded">
-                Placez le QR code dans le cadre
-              </p>
+            <div className="absolute bottom-6 left-0 right-0 text-center">
+              <span className="bg-black/40 backdrop-blur-md text-white text-xs font-bold py-2 px-4 rounded-full border border-white/20">
+                CADREZ LE QR CODE
+              </span>
             </div>
           </div>
-          
-          {isLoading && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Démarrage de la caméra...</span>
-            </div>
-          )}
 
-          <Button variant="outline" onClick={handleStop} className="w-full bg-background/50 backdrop-blur-sm">
-            Arrêter le scan
+          <Button 
+            variant="outline" 
+            onClick={handleStop} 
+            className="w-full h-12 font-semibold bg-background/80 backdrop-blur-md border-2 hover:bg-background"
+          >
+            Annuler le scan
           </Button>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes scan {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}} />
     </Card>
   );
 };
