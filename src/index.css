@@ -451,6 +451,18 @@ body.scanner-active {
 
 body.scanner-active #root {
   background: transparent !important;
+  /* Sur iOS, on doit cacher l'interface pour voir la caméra derrière */
+  visibility: hidden !important;
+}
+
+/* On garde uniquement le bouton d'arrêt visible si nécessaire, 
+   mais pour barcode-scanner natif, il vaut mieux tout cacher 
+   et laisser le plugin gérer la vue. */
+
+/* Optionnel: Si vous voulez garder certains éléments visibles (comme le bouton Arrêter) */
+body.scanner-active .scanner-ui-overlay {
+  opacity: 1 !important;
+  background: transparent !important;
 }
 
 /* ============================================
