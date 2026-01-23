@@ -109,55 +109,95 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
 
     try {
       // Attendre que le DOM soit prêt avec l'élément vidéo
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Configuration optimisée pour iOS WebView
+      // Configuration optimisée pour iOS WebView - résolution plus basse pour compatibilité
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          facingMode: { exact: "environment" },
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
         },
         audio: false,
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        // Fallback si la caméra arrière n'est pas disponible
+        console.log("Fallback to any camera");
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+      }
+      
       streamRef.current = stream;
 
-      if (videoRef.current) {
-        const video = videoRef.current;
-        
-        // CRUCIAL pour iOS: ces attributs doivent être définis AVANT srcObject
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('muted', 'true');
-        video.muted = true;
-        video.playsInline = true;
-        
-        video.srcObject = stream;
-        
-        // Attendre que les métadonnées soient chargées
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Timeout chargement vidéo")), 10000);
-          video.onloadedmetadata = () => {
-            clearTimeout(timeout);
-            resolve();
-          };
-          video.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error("Erreur de chargement vidéo"));
-          };
-        });
-
-        await video.play();
-        
-        setIsLoading(false);
-        
-        // Démarrer le scan QR avec jsQR
-        startQRScanning();
-      } else {
+      const video = videoRef.current;
+      if (!video) {
         throw new Error("Élément vidéo non disponible");
       }
+
+      // CRUCIAL pour iOS: configurer TOUS les attributs AVANT srcObject
+      video.setAttribute('autoplay', '');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.setAttribute('muted', '');
+      video.setAttribute('x5-playsinline', '');
+      video.setAttribute('x5-video-player-type', 'h5');
+      video.setAttribute('x5-video-player-fullscreen', 'true');
+      
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      (video as any).webkitPlaysInline = true;
+      
+      // Assigner le stream
+      video.srcObject = stream;
+      
+      // Forcer le recalcul du layout
+      video.style.display = 'none';
+      video.offsetHeight; // Force reflow
+      video.style.display = 'block';
+      
+      // Attendre que les métadonnées soient chargées
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.log("Video metadata timeout, trying to play anyway");
+          resolve();
+        }, 5000);
+        
+        video.onloadedmetadata = () => {
+          console.log("Video metadata loaded:", video.videoWidth, "x", video.videoHeight);
+          clearTimeout(timeout);
+          resolve();
+        };
+        
+        video.onerror = (e) => {
+          console.error("Video error:", e);
+          clearTimeout(timeout);
+          reject(new Error("Erreur de chargement vidéo"));
+        };
+      });
+
+      // Jouer la vidéo
+      try {
+        await video.play();
+        console.log("Video playing successfully");
+      } catch (playErr) {
+        console.error("Play error:", playErr);
+        // Sur iOS, on peut parfois ignorer cette erreur car la vidéo joue quand même
+      }
+      
+      setIsLoading(false);
+      
+      // Démarrer le scan QR avec jsQR après un court délai
+      setTimeout(() => {
+        startQRScanning();
+      }, 500);
+      
     } catch (err: any) {
       console.error("Scanner error:", err);
       cleanup();
@@ -221,20 +261,40 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ minHeight: "300px" }}>
+          <div 
+            className="relative w-full rounded-xl overflow-hidden" 
+            style={{ 
+              minHeight: "350px", 
+              height: "350px",
+              backgroundColor: "#000" 
+            }}
+          >
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
-              style={{ minHeight: "300px", backgroundColor: "transparent" }}
+              webkit-playsinline="true"
+              x5-playsinline="true"
+              x5-video-player-type="h5"
+              x5-video-player-fullscreen="true"
+              style={{ 
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                transform: "translateZ(0)", // Force GPU acceleration
+                WebkitTransform: "translateZ(0)",
+              }}
             />
             {/* Canvas caché pour l'analyse QR */}
-            <canvas ref={canvasRef} className="hidden" />
+            <canvas ref={canvasRef} style={{ display: "none" }} />
             
             {/* Overlay de visée */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div 
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              style={{ zIndex: 10 }}
+            >
               <div className="relative w-48 h-48">
                 <div className="absolute inset-0 border-2 border-white/30 rounded-lg" />
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
