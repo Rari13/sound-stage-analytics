@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Camera, X, AlertCircle, Smartphone, Globe, Loader2, Settings } from "lucide-react";
+import { Camera, X, AlertCircle, Smartphone, Globe, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Capacitor } from "@capacitor/core";
-import { BarcodeScanner } from "@capacitor-community/barcode-scanner";
 import { Html5Qrcode } from "html5-qrcode";
 
 interface QRScannerNativeProps {
@@ -20,24 +19,13 @@ const isIOSNative = (): boolean => {
   return Capacitor.getPlatform() === 'ios';
 };
 
-const isSecureContext = (): boolean => {
-  if (typeof window === "undefined") return true;
-  return (
-    window.isSecureContext ||
-    window.location.protocol === "https:" ||
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
-  );
-};
-
 export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [platform, setPlatform] = useState<string>("web");
-  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [useWebFallback, setUseWebFallback] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerId = "qr-scanner-container";
 
   useEffect(() => {
     const currentPlatform = Capacitor.getPlatform();
@@ -49,176 +37,89 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   }, []);
 
   const cleanup = async () => {
-    // Cleanup native scanner
-    if (isNativePlatform()) {
-      try {
-        document.body.classList.remove("scanner-active");
-        document.body.style.background = "";
-        await BarcodeScanner.showBackground();
-        await BarcodeScanner.stopScan();
-      } catch (err) {
-        console.error("Error cleaning up native scanner:", err);
-      }
-    }
-    
-    // Cleanup web scanner
     if (html5QrCodeRef.current) {
       try {
         if (html5QrCodeRef.current.isScanning) {
           await html5QrCodeRef.current.stop();
         }
+        html5QrCodeRef.current.clear();
       } catch (err) {
-        console.error("Error cleaning up web scanner:", err);
+        console.error("Error cleaning up scanner:", err);
       }
+      html5QrCodeRef.current = null;
     }
     setIsScanning(false);
   };
 
-  const checkPermissions = async (): Promise<boolean> => {
-    if (!isNativePlatform()) return true;
-
-    try {
-      const status = await BarcodeScanner.checkPermission({ force: false });
-      
-      if (status.granted) {
-        setPermissionGranted(true);
-        return true;
-      }
-      
-      if (status.denied) {
-        setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra pour autoriser l'accès.");
-        setPermissionGranted(false);
-        return false;
-      }
-
-      if (status.neverAsked || status.unknown) {
-        const requestStatus = await BarcodeScanner.checkPermission({ force: true });
-        if (requestStatus.granted) {
-          setPermissionGranted(true);
-          return true;
-        }
-        if (requestStatus.denied) {
-          setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra.");
-          setPermissionGranted(false);
-          return false;
-        }
-      }
-
-      if (status.restricted) {
-        setError("⚠️ L'accès à la caméra est restreint sur cet appareil.");
-        return false;
-      }
-      
-      return false;
-    } catch (err: any) {
-      console.error("Permission error:", err);
-      setError(`Erreur de permission: ${err.message || 'Vérifiez les réglages'}`);
-      return false;
-    }
-  };
-
-  const startNativeScan = async () => {
-    setError(null);
-    setIsLoading(true);
-    
-    const hasPermission = await checkPermissions();
-    if (!hasPermission) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsScanning(true);
-      
-      // Prepare UI for camera view
-      document.body.classList.add("scanner-active");
-      
-      // Sur iOS natif, le scanner s'affiche DERRIÈRE la WebView.
-      // On doit cacher l'interface web (via CSS .scanner-active) pour voir la caméra.
-      await BarcodeScanner.hideBackground();
-      
-      // Start scanning
-      const result = await BarcodeScanner.startScan();
-
-      if (result.hasContent && result.content) {
-        await cleanup();
-        onScanSuccess(result.content);
-      } else {
-        await cleanup();
-      }
-    } catch (err: any) {
-      console.error("Native scan error:", err);
-      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer le scanner'}`);
-      await cleanup();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const startWebScan = async () => {
+  const startScan = async () => {
     setError(null);
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Attendre que le DOM soit prêt
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      const element = document.getElementById("qr-reader-native");
+      const element = document.getElementById(scannerContainerId);
       if (!element) {
         throw new Error("Élément de scan introuvable");
       }
 
+      // Créer une nouvelle instance si nécessaire
       if (!html5QrCodeRef.current) {
-        html5QrCodeRef.current = new Html5Qrcode("qr-reader-native");
+        html5QrCodeRef.current = new Html5Qrcode(scannerContainerId);
       }
 
       setIsScanning(true);
 
+      // Configuration optimisée pour iOS
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        // Désactiver le zoom pour éviter les problèmes sur iOS
+        disableFlip: false,
+      };
+
       await html5QrCodeRef.current.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
+        { facingMode: "environment" }, // Caméra arrière
+        config,
         (decodedText) => {
+          // QR Code détecté !
+          console.log("QR Code scanné:", decodedText);
           cleanup();
           onScanSuccess(decodedText);
         },
-        () => { /* ignore errors during scanning */ }
+        () => {
+          // Ignorer les erreurs de scan (pas de QR code détecté)
+        }
       );
-    } catch (err: any) {
-      console.error("Web scan error:", err);
-      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
-      setIsScanning(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleStartScan = async () => {
-    if (isNativePlatform() && !useWebFallback) {
-      await startNativeScan();
-    } else {
-      if (!isSecureContext()) {
-        setError("⚠️ HTTPS requis pour le scanner. Utilisez l'application native ou accédez via HTTPS.");
-        return;
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error("Scanner error:", err);
+      setIsLoading(false);
+      setIsScanning(false);
+      
+      // Messages d'erreur personnalisés
+      if (err.message?.includes("Permission") || err.name === "NotAllowedError") {
+        if (isIOSNative()) {
+          setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra pour autoriser l'accès.");
+        } else {
+          setError("❌ Accès caméra refusé. Autorisez l'accès dans les paramètres de votre navigateur.");
+        }
+      } else if (err.message?.includes("NotFoundError") || err.name === "NotFoundError") {
+        setError("❌ Aucune caméra détectée sur cet appareil.");
+      } else if (err.message?.includes("NotReadableError") || err.name === "NotReadableError") {
+        setError("❌ La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.");
+      } else {
+        setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
       }
-      await startWebScan();
     }
   };
 
   const handleStop = async () => {
     await cleanup();
     onClose();
-  };
-
-  const openSettings = () => {
-    setError("📱 Pour autoriser la caméra : Ouvrez Réglages > Spark Events > Caméra > Activer");
-  };
-
-  const toggleWebFallback = () => {
-    setUseWebFallback(!useWebFallback);
-    setError(null);
   };
 
   return (
@@ -236,27 +137,14 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="flex flex-col gap-2">
-            <span>{error}</span>
-            {permissionGranted === false && isIOSNative() && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={openSettings}
-                className="w-full mt-2"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Comment autoriser la caméra
-              </Button>
-            )}
-          </AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {!isScanning ? (
         <div className="space-y-4">
           <Button
-            onClick={handleStartScan}
+            onClick={startScan}
             className="w-full h-14 text-lg"
             disabled={isLoading}
           >
@@ -272,7 +160,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             {isNativePlatform() ? (
               <>
                 <Smartphone className="h-4 w-4" />
-                {isIOSNative() ? "iOS" : "Android"} - Mode {useWebFallback ? "Web" : "Natif"} ✅
+                {isIOSNative() ? "iOS" : "Android"} ✅
               </>
             ) : (
               <>
@@ -281,47 +169,38 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
               </>
             )}
           </div>
-          
-          {isNativePlatform() && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleWebFallback}
-              className="w-full text-xs text-muted-foreground"
-            >
-              {useWebFallback ? "Utiliser le scanner natif" : "Problème ? Essayer le mode web"}
-            </Button>
-          )}
 
+          {/* Container caché pour le scanner */}
           <div 
-            id="qr-reader-native" 
-            className={`w-full rounded-lg overflow-hidden bg-black ${useWebFallback ? '' : 'hidden'}`}
-            style={{ minHeight: useWebFallback ? "300px" : "0" }}
+            id={scannerContainerId}
+            className="hidden"
           />
         </div>
       ) : (
-        <div className="text-center space-y-4 py-8">
-          {useWebFallback ? (
-            <div 
-              id="qr-reader-native" 
-              className="w-full rounded-lg overflow-hidden bg-black"
-              style={{ minHeight: "300px" }}
-            />
-          ) : (
-            <>
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              </div>
-              <p className="text-lg font-medium">Scan en cours...</p>
-              <p className="text-sm text-muted-foreground">
-                Pointez la caméra vers le QR code
-              </p>
-              <p className="text-xs text-muted-foreground mt-4">
-                (L'interface va devenir invisible pour laisser voir la caméra)
-              </p>
-            </>
+        <div className="space-y-4">
+          {/* Zone d'affichage de la caméra */}
+          <div 
+            id={scannerContainerId}
+            className="w-full rounded-xl overflow-hidden bg-black"
+            style={{ minHeight: "300px" }}
+          />
+          
+          {isLoading && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Démarrage de la caméra...</span>
+            </div>
           )}
-          <Button variant="outline" onClick={handleStop} className="mt-4">
+
+          <p className="text-sm text-center text-muted-foreground">
+            Pointez la caméra vers le QR code du billet
+          </p>
+
+          <Button 
+            variant="outline" 
+            onClick={handleStop} 
+            className="w-full"
+          >
             Arrêter le scan
           </Button>
         </div>
