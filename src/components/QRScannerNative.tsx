@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Camera as CameraIcon, X, AlertCircle, Smartphone, Globe, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Capacitor } from "@capacitor/core";
 import { Camera } from "@capacitor/camera";
-import { Html5Qrcode } from "html5-qrcode";
+import jsQR from "jsqr";
 
 interface QRScannerNativeProps {
   onScanSuccess: (decodedText: string) => void;
@@ -23,34 +23,32 @@ const isIOSNative = (): boolean => {
 export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [platform, setPlatform] = useState<string>("web");
   const [isLoading, setIsLoading] = useState(false);
-  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
-  const scannerContainerId = "qr-scanner-container";
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<number | null>(null);
+
+  const cleanup = useCallback(() => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsScanning(false);
+  }, []);
 
   useEffect(() => {
-    const currentPlatform = Capacitor.getPlatform();
-    setPlatform(currentPlatform);
-    
     return () => {
       cleanup();
     };
-  }, []);
-
-  const cleanup = async () => {
-    if (html5QrCodeRef.current) {
-      try {
-        if (html5QrCodeRef.current.isScanning) {
-          await html5QrCodeRef.current.stop();
-        }
-        html5QrCodeRef.current.clear();
-      } catch (err) {
-        console.error("Error cleaning up scanner:", err);
-      }
-      html5QrCodeRef.current = null;
-    }
-    setIsScanning(false);
-  };
+  }, [cleanup]);
 
   const requestCameraPermissions = async (): Promise<boolean> => {
     if (!isNativePlatform()) return true;
@@ -67,77 +65,109 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
     }
   };
 
+  const startQRScanning = useCallback(() => {
+    const scanFrame = () => {
+      if (!videoRef.current || !canvasRef.current || !streamRef.current) return;
+      
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
+      
+      if (code) {
+        cleanup();
+        onScanSuccess(code.data);
+      }
+    };
+    
+    // Scanner à 10 FPS
+    scanIntervalRef.current = window.setInterval(scanFrame, 100);
+  }, [cleanup, onScanSuccess]);
+
   const startScan = async () => {
     setError(null);
     setIsLoading(true);
+    setIsScanning(true);
 
-    // 1. Demander les permissions via le plugin Camera (plus fiable sur iOS)
     const hasPermission = await requestCameraPermissions();
     if (!hasPermission) {
       setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra.");
       setIsLoading(false);
+      setIsScanning(false);
       return;
     }
 
     try {
-      // Attendre que le DOM soit prêt
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const element = document.getElementById(scannerContainerId);
-      if (!element) {
-        throw new Error("Élément de scan introuvable");
-      }
+      // Attendre que le DOM soit prêt avec l'élément vidéo
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Créer une nouvelle instance
-      if (!html5QrCodeRef.current) {
-        html5QrCodeRef.current = new Html5Qrcode(scannerContainerId);
-      }
-
-      setIsScanning(true);
-
-      // Configuration spécifique pour iOS natif
-      const config = {
-        fps: 15,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        videoConstraints: {
+      // Configuration optimisée pour iOS WebView
+      const constraints: MediaStreamConstraints = {
+        video: {
           facingMode: "environment",
-          // Forcer playsinline via les contraintes si possible
-        }
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
       };
 
-      await html5QrCodeRef.current.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          cleanup();
-          onScanSuccess(decodedText);
-        },
-        () => { /* ignore scan errors */ }
-      );
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
 
-      // 2. CRUCIAL POUR IOS : Forcer les attributs sur l'élément vidéo créé par html5-qrcode
-      setTimeout(() => {
-        const videoElement = element.querySelector('video');
-        if (videoElement) {
-          videoElement.setAttribute('playsinline', 'true');
-          videoElement.setAttribute('webkit-playsinline', 'true');
-          videoElement.setAttribute('muted', 'true');
-          videoElement.play().catch(e => console.error("Auto-play failed:", e));
-        }
-      }, 500);
+      if (videoRef.current) {
+        const video = videoRef.current;
+        
+        // CRUCIAL pour iOS: ces attributs doivent être définis AVANT srcObject
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.muted = true;
+        video.playsInline = true;
+        
+        video.srcObject = stream;
+        
+        // Attendre que les métadonnées soient chargées
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error("Timeout chargement vidéo")), 10000);
+          video.onloadedmetadata = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          video.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error("Erreur de chargement vidéo"));
+          };
+        });
 
-      setIsLoading(false);
+        await video.play();
+        
+        setIsLoading(false);
+        
+        // Démarrer le scan QR avec jsQR
+        startQRScanning();
+      } else {
+        throw new Error("Élément vidéo non disponible");
+      }
     } catch (err: any) {
       console.error("Scanner error:", err);
+      cleanup();
       setIsLoading(false);
-      setIsScanning(false);
       setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
     }
   };
 
-  const handleStop = async () => {
-    await cleanup();
+  const handleStop = () => {
+    cleanup();
     onClose();
   };
 
@@ -188,21 +218,37 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
               </>
             )}
           </div>
-
-          <div id={scannerContainerId} className="hidden" />
         </div>
       ) : (
         <div className="space-y-4">
-          <div 
-            id={scannerContainerId}
-            className="w-full rounded-xl overflow-hidden bg-black"
-            style={{ minHeight: "300px" }}
-          />
+          <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ minHeight: "300px" }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+              style={{ minHeight: "300px", backgroundColor: "transparent" }}
+            />
+            {/* Canvas caché pour l'analyse QR */}
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {/* Overlay de visée */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="relative w-48 h-48">
+                <div className="absolute inset-0 border-2 border-white/30 rounded-lg" />
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
+              </div>
+            </div>
+          </div>
           
           {isLoading && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Démarrage...</span>
+              <span className="ml-2">Démarrage de la caméra...</span>
             </div>
           )}
 
