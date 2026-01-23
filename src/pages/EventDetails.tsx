@@ -11,7 +11,8 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { GroupPayModal } from "@/components/GroupPayModal";
 import { CartDrawer } from "@/components/CartDrawer";
-import { buildShareableUrl } from "@/lib/urlUtils";
+import { buildEventShareUrl } from "@/lib/urlUtils";
+import { openStripeCheckout } from "@/lib/browserUtils";
 
 interface Event {
   id: string;
@@ -145,7 +146,8 @@ const EventDetails = () => {
         });
         if (error) throw error;
         if (data?.url) {
-          window.open(data.url, '_blank');
+          // Utiliser openStripeCheckout pour iOS/Android natif
+          await openStripeCheckout(data.url);
           setGuestEmailDialogOpen(false);
           setCartOpen(false);
         }
@@ -314,7 +316,7 @@ const EventDetails = () => {
             variant="outline"
             className="w-full rounded-2xl h-12"
             onClick={async () => {
-              const eventUrl = buildShareableUrl(`/events/${slug}`);
+              const eventUrl = buildEventShareUrl(slug || '');
               const shareData = {
                 title: event.title,
                 text: `${event.title} - ${format(new Date(event.starts_at), "d MMMM yyyy", { locale: fr })} à ${event.venue}`,

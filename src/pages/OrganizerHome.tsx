@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { openExternalUrl } from "@/lib/browserUtils";
 import { PostEventSurvey } from "@/components/PostEventSurvey";
 
 interface Event {
@@ -154,7 +155,7 @@ export default function OrganizerHome() {
         body: { organizerId: organizer.id },
       });
       if (error) throw error;
-      if (data?.url) window.open(data.url, "_self");
+      if (data?.url) await openExternalUrl(data.url);
     } catch (error) {
       toast.error("Erreur de connexion Stripe");
     } finally {

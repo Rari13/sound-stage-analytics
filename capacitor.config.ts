@@ -5,7 +5,13 @@ const config: CapacitorConfig = {
   appName: 'Spark Events',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    // Important: Allow navigation to Stripe checkout URLs
+    allowNavigation: [
+      'checkout.stripe.com',
+      '*.stripe.com',
+      'spark-events-analytics.vercel.app'
+    ]
   },
   plugins: {
     Keyboard: {
@@ -13,6 +19,20 @@ const config: CapacitorConfig = {
       style: 'dark',
       resizeOnFullScreen: true,
     },
+    // Configuration du scanner de code-barres pour iOS
+    BarcodeScanner: {
+      // Demander la permission au démarrage
+      requestPermissionOnFirstCall: true,
+    },
+  },
+  // Configuration iOS spécifique
+  ios: {
+    // Permettre le scroll inertiel natif
+    scrollEnabled: true,
+    // Schéma HTTPS pour les requêtes
+    scheme: 'https',
+    // Permettre les liens externes
+    allowsLinkPreview: true,
   }
 };
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { openStripeCheckout, openExternalUrl } from "@/lib/browserUtils";
 
 interface SubscriptionState {
   isPremium: boolean;
@@ -80,7 +81,7 @@ export const useSubscription = () => {
       
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        await openExternalUrl(data.url);
       }
       return { success: true };
     } catch (error) {
@@ -95,7 +96,7 @@ export const useSubscription = () => {
       
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        await openStripeCheckout(data.url);
       }
       return { success: true };
     } catch (error) {

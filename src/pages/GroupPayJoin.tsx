@@ -10,6 +10,7 @@ import { Users, Calendar, MapPin, Check, Clock, ArrowRight, Loader2 } from "luci
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { openStripeCheckout } from "@/lib/browserUtils";
 
 interface GroupOrder {
   id: string;
@@ -106,7 +107,8 @@ export default function GroupPayJoin() {
 
       if (error) throw new Error(error.message);
       if (data?.url) {
-        window.location.href = data.url;
+        // Utiliser openStripeCheckout pour iOS/Android natif
+        await openStripeCheckout(data.url);
       }
     } catch (err: any) {
       toast.error(err.message || "Erreur de paiement");
