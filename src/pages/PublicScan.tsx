@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { QRScanner } from "@/components/QRScanner";
+import { QRScannerNative } from "@/components/QRScannerNative";
+import { Capacitor } from "@capacitor/core";
 import { Camera, CheckCircle2, XCircle, AlertCircle, Clock, Scan, Shield } from "lucide-react";
 
 export default function PublicScan() {
@@ -215,13 +217,23 @@ export default function PublicScan() {
               </form>
             </>
           ) : (
-            <QRScanner
-              onScanSuccess={(code) => {
-                setShowScanner(false);
-                validateTicket(code);
-              }}
-              onClose={() => setShowScanner(false)}
-            />
+            {Capacitor.isNativePlatform() ? (
+              <QRScannerNative
+                onScanSuccess={(code) => {
+                  setShowScanner(false);
+                  validateTicket(code);
+                }}
+                onClose={() => setShowScanner(false)}
+              />
+            ) : (
+              <QRScanner
+                onScanSuccess={(code) => {
+                  setShowScanner(false);
+                  validateTicket(code);
+                }}
+                onClose={() => setShowScanner(false)}
+              />
+            )}
           )}
         </Card>
 

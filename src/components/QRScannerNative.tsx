@@ -31,7 +31,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
 
   const cleanup = useCallback(() => {
     if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
+      window.clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
     if (streamRef.current) {
@@ -71,12 +71,16 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
       
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: false });
       
       if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
       
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Optimisation : ne pas redimensionner le canvas à chaque frame si pas nécessaire
+      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+      
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -109,9 +113,8 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
 
     try {
       // Attendre que le DOM soit prêt avec l'élément vidéo
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Configuration optimisée pour iOS WebView
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: "environment",
@@ -127,7 +130,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // CRUCIAL pour iOS: ces attributs doivent être définis AVANT srcObject
+        // CRUCIAL pour iOS WebView : ces attributs doivent être définis AVANT srcObject
         video.setAttribute('playsinline', 'true');
         video.setAttribute('webkit-playsinline', 'true');
         video.setAttribute('muted', 'true');
@@ -139,21 +142,24 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
         // Attendre que les métadonnées soient chargées
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => reject(new Error("Timeout chargement vidéo")), 10000);
-          video.onloadedmetadata = () => {
+          
+          const onLoaded = () => {
             clearTimeout(timeout);
+            video.removeEventListener('loadedmetadata', onLoaded);
             resolve();
           };
+          
+          video.addEventListener('loadedmetadata', onLoaded);
           video.onerror = () => {
             clearTimeout(timeout);
             reject(new Error("Erreur de chargement vidéo"));
           };
         });
 
+        // Sur iOS, play() doit parfois être appelé après un court délai
         await video.play();
         
         setIsLoading(false);
-        
-        // Démarrer le scan QR avec jsQR
         startQRScanning();
       } else {
         throw new Error("Élément vidéo non disponible");
@@ -228,7 +234,12 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
               playsInline
               muted
               className="w-full h-full object-cover"
-              style={{ minHeight: "300px", backgroundColor: "transparent" }}
+              style={{ 
+                minHeight: "300px", 
+                backgroundColor: "black",
+                // Forcer l'affichage sur iOS
+                WebkitTransform: "translateZ(0)"
+              }}
             />
             {/* Canvas caché pour l'analyse QR */}
             <canvas ref={canvasRef} className="hidden" />
