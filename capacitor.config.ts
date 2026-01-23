@@ -33,6 +33,8 @@ const config: CapacitorConfig = {
     scheme: 'https',
     // Permettre les liens externes
     allowsLinkPreview: true,
+    // CRUCIAL pour la caméra : autoriser la lecture vidéo inline
+    allowsInlineMediaPlayback: true,
   }
 };
 

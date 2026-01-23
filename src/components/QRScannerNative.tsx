@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Camera, X, AlertCircle, Smartphone, Globe, Loader2 } from "lucide-react";
+import { Camera as CameraIcon, X, AlertCircle, Smartphone, Globe, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Capacitor } from "@capacitor/core";
+import { Camera } from "@capacitor/camera";
 import { Html5Qrcode } from "html5-qrcode";
 
 interface QRScannerNativeProps {
@@ -51,69 +52,87 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
     setIsScanning(false);
   };
 
+  const requestCameraPermissions = async (): Promise<boolean> => {
+    if (!isNativePlatform()) return true;
+    
+    try {
+      const status = await Camera.checkPermissions();
+      if (status.camera === 'granted') return true;
+      
+      const requestStatus = await Camera.requestPermissions({ permissions: ['camera'] });
+      return requestStatus.camera === 'granted';
+    } catch (err) {
+      console.error("Error requesting camera permissions:", err);
+      return false;
+    }
+  };
+
   const startScan = async () => {
     setError(null);
     setIsLoading(true);
 
+    // 1. Demander les permissions via le plugin Camera (plus fiable sur iOS)
+    const hasPermission = await requestCameraPermissions();
+    if (!hasPermission) {
+      setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Attendre que le DOM soit prêt
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       const element = document.getElementById(scannerContainerId);
       if (!element) {
         throw new Error("Élément de scan introuvable");
       }
 
-      // Créer une nouvelle instance si nécessaire
+      // Créer une nouvelle instance
       if (!html5QrCodeRef.current) {
         html5QrCodeRef.current = new Html5Qrcode(scannerContainerId);
       }
 
       setIsScanning(true);
 
-      // Configuration optimisée pour iOS
+      // Configuration spécifique pour iOS natif
       const config = {
-        fps: 10,
+        fps: 15,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
-        // Désactiver le zoom pour éviter les problèmes sur iOS
-        disableFlip: false,
+        videoConstraints: {
+          facingMode: "environment",
+          // Forcer playsinline via les contraintes si possible
+        }
       };
 
       await html5QrCodeRef.current.start(
-        { facingMode: "environment" }, // Caméra arrière
+        { facingMode: "environment" },
         config,
         (decodedText) => {
-          // QR Code détecté !
-          console.log("QR Code scanné:", decodedText);
           cleanup();
           onScanSuccess(decodedText);
         },
-        () => {
-          // Ignorer les erreurs de scan (pas de QR code détecté)
-        }
+        () => { /* ignore scan errors */ }
       );
+
+      // 2. CRUCIAL POUR IOS : Forcer les attributs sur l'élément vidéo créé par html5-qrcode
+      setTimeout(() => {
+        const videoElement = element.querySelector('video');
+        if (videoElement) {
+          videoElement.setAttribute('playsinline', 'true');
+          videoElement.setAttribute('webkit-playsinline', 'true');
+          videoElement.setAttribute('muted', 'true');
+          videoElement.play().catch(e => console.error("Auto-play failed:", e));
+        }
+      }, 500);
 
       setIsLoading(false);
     } catch (err: any) {
       console.error("Scanner error:", err);
       setIsLoading(false);
       setIsScanning(false);
-      
-      // Messages d'erreur personnalisés
-      if (err.message?.includes("Permission") || err.name === "NotAllowedError") {
-        if (isIOSNative()) {
-          setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra pour autoriser l'accès.");
-        } else {
-          setError("❌ Accès caméra refusé. Autorisez l'accès dans les paramètres de votre navigateur.");
-        }
-      } else if (err.message?.includes("NotFoundError") || err.name === "NotFoundError") {
-        setError("❌ Aucune caméra détectée sur cet appareil.");
-      } else if (err.message?.includes("NotReadableError") || err.name === "NotReadableError") {
-        setError("❌ La caméra est utilisée par une autre application. Fermez les autres apps et réessayez.");
-      } else {
-        setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
-      }
+      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
     }
   };
 
@@ -126,7 +145,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
     <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Camera className="h-5 w-5 text-primary" />
+          <CameraIcon className="h-5 w-5 text-primary" />
           <span className="font-semibold">Scanner QR Code</span>
         </div>
         <Button variant="ghost" size="icon" onClick={handleStop}>
@@ -151,7 +170,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             {isLoading ? (
               <Loader2 className="h-6 w-6 mr-2 animate-spin" />
             ) : (
-              <Camera className="h-6 w-6 mr-2" />
+              <CameraIcon className="h-6 w-6 mr-2" />
             )}
             {isLoading ? "Initialisation..." : "Lancer le Scanner"}
           </Button>
@@ -160,7 +179,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             {isNativePlatform() ? (
               <>
                 <Smartphone className="h-4 w-4" />
-                {isIOSNative() ? "iOS" : "Android"} ✅
+                {isIOSNative() ? "iOS Natif" : "Android Natif"} ✅
               </>
             ) : (
               <>
@@ -170,15 +189,10 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             )}
           </div>
 
-          {/* Container caché pour le scanner */}
-          <div 
-            id={scannerContainerId}
-            className="hidden"
-          />
+          <div id={scannerContainerId} className="hidden" />
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Zone d'affichage de la caméra */}
           <div 
             id={scannerContainerId}
             className="w-full rounded-xl overflow-hidden bg-black"
@@ -188,19 +202,11 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
           {isLoading && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Démarrage de la caméra...</span>
+              <span className="ml-2">Démarrage...</span>
             </div>
           )}
 
-          <p className="text-sm text-center text-muted-foreground">
-            Pointez la caméra vers le QR code du billet
-          </p>
-
-          <Button 
-            variant="outline" 
-            onClick={handleStop} 
-            className="w-full"
-          >
+          <Button variant="outline" onClick={handleStop} className="w-full">
             Arrêter le scan
           </Button>
         </div>
