@@ -1,20 +1,15 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Camera as CameraIcon, X, AlertCircle, Smartphone, Globe, Loader2 } from "lucide-react";
+import { Camera as CameraIcon, X, AlertCircle, Smartphone, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Capacitor } from "@capacitor/core";
-import { Camera } from "@capacitor/camera";
-import jsQR from "jsqr";
+import { CameraView } from 'capacitor-camera-view';
 
 interface QRScannerNativeProps {
   onScanSuccess: (decodedText: string) => void;
   onClose: () => void;
 }
-
-const isNativePlatform = (): boolean => {
-  return Capacitor.isNativePlatform();
-};
 
 const isIOSNative = (): boolean => {
   return Capacitor.getPlatform() === 'ios';
@@ -24,24 +19,22 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<number | null>(null);
 
-  const cleanup = useCallback(() => {
-    if (scanIntervalRef.current) {
-      window.clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
+  const cleanup = useCallback(async () => {
+    try {
+      // Retirer la classe de transparence
+      document.body.classList.remove('camera-running');
+      
+      // Arrêter le plugin de caméra
+      await CameraView.stop();
+      
+      // Supprimer tous les écouteurs d'événements
+      await CameraView.removeAllListeners();
+      
+      setIsScanning(false);
+    } catch (err) {
+      console.error("Error during cleanup:", err);
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsScanning(false);
   }, []);
 
   useEffect(() => {
@@ -50,139 +43,50 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
     };
   }, [cleanup]);
 
-  const requestCameraPermissions = async (): Promise<boolean> => {
-    if (!isNativePlatform()) return true;
-    
-    try {
-      const status = await Camera.checkPermissions();
-      if (status.camera === 'granted') return true;
-      
-      const requestStatus = await Camera.requestPermissions({ permissions: ['camera'] });
-      return requestStatus.camera === 'granted';
-    } catch (err) {
-      console.error("Error requesting camera permissions:", err);
-      return false;
-    }
-  };
-
-  const startQRScanning = useCallback(() => {
-    const scanFrame = () => {
-      if (!videoRef.current || !canvasRef.current || !streamRef.current) return;
-      
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d', { alpha: false });
-      
-      if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      
-      // Optimisation : ne pas redimensionner le canvas à chaque frame si pas nécessaire
-      if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-      }
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
-      });
-      
-      if (code) {
-        cleanup();
-        onScanSuccess(code.data);
-      }
-    };
-    
-    // Scanner à 10 FPS
-    scanIntervalRef.current = window.setInterval(scanFrame, 100);
-  }, [cleanup, onScanSuccess]);
-
   const startScan = async () => {
     setError(null);
     setIsLoading(true);
-    setIsScanning(true);
-
-    const hasPermission = await requestCameraPermissions();
-    if (!hasPermission) {
-      setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra.");
-      setIsLoading(false);
-      setIsScanning(false);
-      return;
-    }
 
     try {
-      // Attendre que le DOM soit prêt avec l'élément vidéo
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // 1. Ajouter l'écouteur pour la détection de code-barres
+      await CameraView.addListener('barcodeDetected', (data: any) => {
+        if (data && data.value) {
+          console.log('Barcode detected:', data.value);
+          cleanup();
+          onScanSuccess(data.value);
+        }
+      });
 
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      };
+      // 2. Démarrer la caméra avec détection de code-barres
+      await CameraView.start({ 
+        enableBarcodeDetection: true,
+        position: 'rear' // Utiliser la caméra arrière par défaut
+      });
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        const video = videoRef.current;
-        
-        // CRUCIAL pour iOS WebView : ces attributs doivent être définis AVANT srcObject
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('muted', 'true');
-        video.muted = true;
-        video.playsInline = true;
-        
-        video.srcObject = stream;
-        
-        // Attendre que les métadonnées soient chargées
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Timeout chargement vidéo")), 10000);
-          
-          const onLoaded = () => {
-            clearTimeout(timeout);
-            video.removeEventListener('loadedmetadata', onLoaded);
-            resolve();
-          };
-          
-          video.addEventListener('loadedmetadata', onLoaded);
-          video.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error("Erreur de chargement vidéo"));
-          };
-        });
-
-        // Sur iOS, play() doit parfois être appelé après un court délai
-        await video.play();
-        
-        setIsLoading(false);
-        startQRScanning();
-      } else {
-        throw new Error("Élément vidéo non disponible");
-      }
+      // 3. Rendre la WebView transparente pour voir la caméra en dessous
+      document.body.classList.add('camera-running');
+      
+      setIsScanning(true);
+      setIsLoading(false);
     } catch (err: any) {
       console.error("Scanner error:", err);
       cleanup();
       setIsLoading(false);
-      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra'}`);
+      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer la caméra native'}`);
     }
   };
 
-  const handleStop = () => {
-    cleanup();
+  const handleStop = async () => {
+    await cleanup();
     onClose();
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="p-4 space-y-4 bg-background/80 backdrop-blur-sm relative z-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CameraIcon className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Scanner QR Code</span>
+          <span className="font-semibold">Scanner QR Code (Natif)</span>
         </div>
         <Button variant="ghost" size="icon" onClick={handleStop}>
           <X className="h-4 w-4" />
@@ -212,38 +116,17 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
           </Button>
           
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            {isNativePlatform() ? (
-              <>
-                <Smartphone className="h-4 w-4" />
-                {isIOSNative() ? "iOS Natif" : "Android Natif"} ✅
-              </>
-            ) : (
-              <>
-                <Globe className="h-4 w-4" />
-                Mode Web 🌐
-              </>
-            )}
+            <Smartphone className="h-4 w-4" />
+            {isIOSNative() ? "iOS Natif" : "Android Natif"} ✅
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ minHeight: "300px" }}>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-              style={{ 
-                minHeight: "300px", 
-                backgroundColor: "black",
-                // Forcer l'affichage sur iOS
-                WebkitTransform: "translateZ(0)"
-              }}
-            />
-            {/* Canvas caché pour l'analyse QR */}
-            <canvas ref={canvasRef} className="hidden" />
-            
+          {/* 
+            Note: Avec capacitor-camera-view, la vidéo est affichée SOUS la WebView.
+            On affiche ici un overlay de visée transparent.
+          */}
+          <div className="relative w-full rounded-xl overflow-hidden border-2 border-primary/50" style={{ minHeight: "300px", backgroundColor: "transparent" }}>
             {/* Overlay de visée */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="relative w-48 h-48">
@@ -254,6 +137,12 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
               </div>
             </div>
+            
+            <div className="absolute bottom-4 left-0 right-0 text-center">
+              <p className="text-white text-sm font-medium drop-shadow-md bg-black/20 py-1 px-2 inline-block rounded">
+                Placez le QR code dans le cadre
+              </p>
+            </div>
           </div>
           
           {isLoading && (
@@ -263,7 +152,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             </div>
           )}
 
-          <Button variant="outline" onClick={handleStop} className="w-full">
+          <Button variant="outline" onClick={handleStop} className="w-full bg-background/50 backdrop-blur-sm">
             Arrêter le scan
           </Button>
         </div>

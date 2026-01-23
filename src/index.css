@@ -445,12 +445,32 @@
    ============================================ */
 
 /* When scanner is active, make body transparent for camera view */
-body.scanner-active {
+body.scanner-active,
+body.camera-running {
+  background: transparent !important;
+  --background: transparent !important;
+}
+
+body.scanner-active #root,
+body.camera-running #root {
   background: transparent !important;
 }
 
+/* On cache tout sauf le scanner quand il tourne pour voir la caméra en dessous */
+body.camera-running main,
+body.camera-running nav,
+body.camera-running footer {
+  visibility: hidden;
+}
+
+/* On s'assure que le conteneur du scanner reste visible */
+body.camera-running .fixed,
+body.camera-running [role="dialog"],
+body.camera-running .z-50 {
+  visibility: visible;
+}
+
 body.scanner-active #root {
-  background: transparent !important;
   /* Sur iOS, on doit cacher l'interface pour voir la caméra derrière */
   visibility: hidden !important;
 }
