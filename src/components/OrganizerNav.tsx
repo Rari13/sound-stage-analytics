@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Calendar, Brain, Plus } from "lucide-react";
+import { Home, Calendar, QrCode, Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/orga/home", icon: Home, label: "Accueil" },
   { to: "/orga/events", icon: Calendar, label: "Événements" },
+  { to: "/orga/scan", icon: QrCode, label: "Scanner" },
   { to: "/orga/analytics", icon: Brain, label: "Intelligence" },
 ];
 
