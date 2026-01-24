@@ -1,10 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Camera as CameraIcon, X, AlertCircle, Smartphone, Loader2 } from "lucide-react";
+import { Camera as CameraIcon, X, AlertCircle, Loader2, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Capacitor } from "@capacitor/core";
-import { BarcodeScanner, BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
+import jsQR from "jsqr";
 
 interface QRScannerNativeProps {
   onScanSuccess: (decodedText: string) => void;
@@ -15,120 +14,164 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationRef = useRef<number | null>(null);
 
-  const cleanup = useCallback(async () => {
-    console.log("[Scanner ML Kit] Cleanup...");
-    try {
-      // Retirer la classe de transparence
-      document.body.classList.remove('scanner-active');
-      document.documentElement.classList.remove('scanner-active');
-      
-      // Arrêter le scan
-      await BarcodeScanner.stopScan();
-    } catch (err) {
-      console.error("[Scanner ML Kit] Cleanup error:", err);
+  // Nettoyer les ressources
+  const cleanup = useCallback(() => {
+    console.log("[Scanner HTML5] Cleanup...");
+    
+    // Arrêter l'animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
+    
+    // Arrêter le flux vidéo
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("[Scanner HTML5] Track stopped:", track.kind);
+      });
+      streamRef.current = null;
+    }
+    
+    // Nettoyer la vidéo
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     setIsScanning(false);
     setIsLoading(false);
   }, []);
 
+  // Cleanup au démontage
   useEffect(() => {
     return () => {
       cleanup();
     };
   }, [cleanup]);
 
-  const checkPermission = async (): Promise<boolean> => {
-    try {
-      const { camera } = await BarcodeScanner.checkPermissions();
-      
-      if (camera === 'granted' || camera === 'limited') {
-        return true;
-      }
-      
-      if (camera === 'denied') {
-        setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra pour l'activer.");
-        return false;
-      }
-      
-      // Demander la permission
-      const { camera: newStatus } = await BarcodeScanner.requestPermissions();
-      return newStatus === 'granted' || newStatus === 'limited';
-      
-    } catch (err) {
-      console.error("[Scanner ML Kit] Permission error:", err);
-      return false;
+  // Boucle de scan QR
+  const scanQRCode = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationRef.current = requestAnimationFrame(scanQRCode);
+      return;
     }
-  };
+    
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      animationRef.current = requestAnimationFrame(scanQRCode);
+      return;
+    }
+    
+    // Adapter le canvas à la taille de la vidéo
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Dessiner l'image de la vidéo sur le canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Récupérer les données de l'image
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // Décoder le QR code avec jsQR
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+    
+    if (code && code.data) {
+      console.log("[Scanner HTML5] QR Code détecté:", code.data);
+      
+      // Vibration feedback (si supporté)
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+      
+      // Arrêter le scan et appeler le callback
+      cleanup();
+      onScanSuccess(code.data);
+      return;
+    }
+    
+    // Continuer à scanner
+    animationRef.current = requestAnimationFrame(scanQRCode);
+  }, [cleanup, onScanSuccess]);
 
+  // Démarrer le scan
   const startScan = async () => {
-    console.log("[Scanner ML Kit] Starting scan...");
+    console.log("[Scanner HTML5] Starting scan...");
     setError(null);
     setIsLoading(true);
 
-    // Vérifier qu'on est sur une plateforme native
-    if (!Capacitor.isNativePlatform()) {
-      setError("❌ Le scanner natif nécessite l'application mobile.");
-      setIsLoading(false);
-      return;
-    }
-
-    // Vérifier les permissions
-    const hasPermission = await checkPermission();
-    if (!hasPermission) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Vérifier si le scanner est supporté
-      const { supported } = await BarcodeScanner.isSupported();
-      if (!supported) {
-        throw new Error("Le scanner n'est pas supporté sur cet appareil");
+      // Demander l'accès à la caméra arrière
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: { ideal: "environment" }, // Caméra arrière
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      };
+
+      console.log("[Scanner HTML5] Requesting camera access...");
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      
+      console.log("[Scanner HTML5] Camera access granted");
+      
+      // Attacher le flux à la vidéo
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Attendre que la vidéo soit prête
+        videoRef.current.onloadedmetadata = () => {
+          console.log("[Scanner HTML5] Video metadata loaded");
+          videoRef.current?.play().then(() => {
+            console.log("[Scanner HTML5] Video playing");
+            setIsScanning(true);
+            setIsLoading(false);
+            
+            // Démarrer la boucle de scan
+            animationRef.current = requestAnimationFrame(scanQRCode);
+          }).catch(err => {
+            console.error("[Scanner HTML5] Video play error:", err);
+            setError("❌ Impossible de démarrer la vidéo");
+            cleanup();
+          });
+        };
       }
-
-      // Activer la transparence de la WebView
-      document.body.classList.add('scanner-active');
-      document.documentElement.classList.add('scanner-active');
-      
-      setIsScanning(true);
-      setIsLoading(false);
-
-      console.log("[Scanner ML Kit] Starting barcode scan with ML Kit...");
-      
-      // Ajouter un listener pour les résultats de scan
-      const listener = await BarcodeScanner.addListener('barcodeScanned', async (result) => {
-        console.log("[Scanner ML Kit] Barcode detected:", result.barcode.displayValue);
-        
-        // Arrêter le scan
-        await cleanup();
-        
-        // Retirer le listener
-        listener.remove();
-        
-        // Appeler le callback avec le résultat
-        onScanSuccess(result.barcode.displayValue);
-      });
-      
-      // Démarrer le scan avec configuration
-      await BarcodeScanner.startScan({
-        formats: [BarcodeFormat.QrCode, BarcodeFormat.Ean13, BarcodeFormat.Ean8], // QR Code + codes-barres classiques
-      });
       
     } catch (err: any) {
-      console.error("[Scanner ML Kit] Scan error:", err);
-      await cleanup();
-      setError(`❌ Erreur: ${err.message || 'Impossible de démarrer le scanner'}`);
+      console.error("[Scanner HTML5] Camera error:", err);
+      cleanup();
+      
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setError("❌ Accès caméra refusé. Allez dans Réglages > Safari > Caméra et autorisez l'accès.");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setError("❌ Aucune caméra trouvée sur cet appareil.");
+      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+        setError("❌ La caméra est utilisée par une autre application.");
+      } else {
+        setError(`❌ Erreur: ${err.message || "Impossible d'accéder à la caméra"}`);
+      }
     }
   };
 
-  const handleStop = async () => {
-    await cleanup();
+  const handleStop = () => {
+    cleanup();
     onClose();
   };
 
   return (
-    <Card className={`p-4 space-y-4 scanner-card ${isScanning ? 'scanner-card-active' : ''}`}>
+    <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 p-2 rounded-full">
@@ -153,63 +196,81 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
         </Alert>
       )}
 
-      {!isScanning ? (
+      {!isScanning && !isLoading ? (
         <div className="space-y-6 py-4">
           <div className="text-center space-y-2">
             <p className="text-muted-foreground text-sm">
-              Scanner natif ML Kit haute performance
-            </p>
-            <p className="text-xs text-muted-foreground/60">
-              Détection instantanée • QR Code & Codes-barres
+              Scannez les QR codes des billets
             </p>
           </div>
           <Button
             onClick={startScan}
             className="w-full h-16 text-xl font-bold shadow-lg hover:shadow-primary/20 transition-all active:scale-95"
-            disabled={isLoading}
           >
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-            ) : (
-              <CameraIcon className="h-6 w-6 mr-3" />
-            )}
-            {isLoading ? "Initialisation..." : "Ouvrir la Caméra"}
+            <CameraIcon className="h-6 w-6 mr-3" />
+            Ouvrir la Caméra
           </Button>
           
           <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
-            <Smartphone className="h-3 w-3" />
-            Google ML Kit • iOS Optimisé
+            <Zap className="h-3 w-3" />
+            Détection instantanée
           </div>
         </div>
       ) : (
-        <div className="space-y-6 scanner-ui-visible">
-          {/* Zone de visée - visible par-dessus la caméra */}
-          <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-4 border-primary/30 bg-transparent">
-            {/* Overlay de visée */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="relative w-64 h-64">
-                {/* Coins animés */}
-                <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-3xl animate-pulse" />
-                <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-3xl animate-pulse" />
-                <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-3xl animate-pulse" />
-                <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-3xl animate-pulse" />
-                
-                {/* Ligne de scan animée */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_15px_rgba(var(--primary),0.5)] animate-scan" />
+        <div className="space-y-4">
+          {/* Zone de prévisualisation de la caméra */}
+          <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-black">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+                <div className="text-center space-y-3">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+                  <p className="text-white text-sm">Initialisation de la caméra...</p>
+                </div>
               </div>
-            </div>
+            )}
             
-            <div className="absolute bottom-6 left-0 right-0 text-center">
-              <span className="bg-black/40 backdrop-blur-md text-white text-xs font-bold py-2 px-4 rounded-full border border-white/20">
-                CADREZ LE QR CODE OU CODE-BARRE
-              </span>
-            </div>
+            {/* Vidéo de la caméra */}
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              playsInline
+              muted
+              autoPlay
+            />
+            
+            {/* Canvas caché pour le traitement */}
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {/* Overlay de visée */}
+            {isScanning && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-64 h-64">
+                  {/* Coins animés */}
+                  <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-2xl animate-pulse" />
+                  <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-2xl animate-pulse" />
+                  <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-2xl animate-pulse" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-2xl animate-pulse" />
+                  
+                  {/* Ligne de scan animée */}
+                  <div className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
+                </div>
+              </div>
+            )}
+            
+            {/* Instruction */}
+            {isScanning && (
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <span className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium py-2 px-4 rounded-full">
+                  Cadrez le QR code dans la zone
+                </span>
+              </div>
+            )}
           </div>
 
           <Button 
             variant="outline" 
             onClick={handleStop} 
-            className="w-full h-12 font-semibold bg-background/80 backdrop-blur-md border-2 hover:bg-background scanner-stop-btn"
+            className="w-full h-12 font-semibold"
           >
             Arrêter le scan
           </Button>
@@ -217,14 +278,14 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes scan {
-          0% { top: 0%; opacity: 0; }
+        @keyframes scan-line {
+          0% { top: 10%; opacity: 0; }
           10% { opacity: 1; }
           90% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
+          100% { top: 90%; opacity: 0; }
         }
-        .animate-scan {
-          animation: scan 2s linear infinite;
+        .animate-scan-line {
+          animation: scan-line 2s ease-in-out infinite;
         }
       `}} />
     </Card>

@@ -441,65 +441,25 @@
 }
 
 /* ============================================
-   SCANNER NATIVE MODE - @capacitor-community/barcode-scanner
+   SCANNER HTML5 - getUserMedia + jsQR
    ============================================ */
 
 /*
- * IMPORTANT: Pour que le scanner natif fonctionne sur iOS, la WebView doit être transparente.
- * Cela est configuré dans AppDelegate.swift avec:
- *   webView.isOpaque = false
- *   webView.backgroundColor = UIColor.clear
- *
- * Ces règles CSS rendent ensuite le contenu web transparent pour voir la caméra native.
+ * Scanner QR utilisant l'API HTML5 getUserMedia.
+ * Pas besoin de configuration native spéciale.
+ * La caméra s'affiche directement dans un élément <video>.
  */
 
-/* Étape 1: Rendre html et body transparents quand le scanner est actif */
-html.scanner-active,
-body.scanner-active {
-  background: transparent !important;
-  background-color: transparent !important;
+/* Animation de la ligne de scan */
+@keyframes scan-line {
+  0% { top: 10%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
 }
 
-/* Étape 2: Rendre le conteneur React transparent */
-body.scanner-active #root {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-/* Étape 3: Cacher TOUT le contenu de l'app pour voir la caméra derrière */
-body.scanner-active #root > * {
-  visibility: hidden !important;
-}
-
-/* Étape 4: Mais garder visible UNIQUEMENT les éléments du scanner UI */
-body.scanner-active .scanner-card,
-body.scanner-active .scanner-card *,
-body.scanner-active .scanner-ui-visible,
-body.scanner-active .scanner-ui-visible *,
-body.scanner-active .scanner-stop-btn {
-  visibility: visible !important;
-}
-
-/* Étape 5: Positionner la carte du scanner en plein écran par-dessus la caméra */
-body.scanner-active .scanner-card {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 9999 !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px) 16px !important;
-}
-
-/* Étape 6: Style de la zone de visée (overlay par-dessus la caméra) */
-body.scanner-active .scanner-card-active {
-  background: transparent !important;
+.animate-scan-line {
+  animation: scan-line 2s ease-in-out infinite;
 }
 
 /* ============================================
