@@ -274,17 +274,14 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
               autoPlay
               playsInline
               muted
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              x5-video-player-type="h5"
-              x5-video-player-fullscreen="true"
               style={{ 
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
                 display: "block",
-                transform: "translateZ(0)", // Force GPU acceleration
+                transform: "translateZ(0)",
                 WebkitTransform: "translateZ(0)",
+                backgroundColor: "transparent",
               }}
             />
             {/* Canvas caché pour l'analyse QR */}
