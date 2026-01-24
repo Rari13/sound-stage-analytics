@@ -18,7 +18,7 @@ import EventsBrowse from "./pages/EventsBrowse";
 import ClientTickets from "./pages/ClientTickets";
 import ClientFollows from "./pages/ClientFollows";
 import VerifyEmail from "./pages/VerifyEmail";
-import OrganizerScan from "./pages/OrganizerScan";
+
 import EventCreate from "./pages/EventCreate";
 import EventEdit from "./pages/EventEdit";
 import EventDetails from "./pages/EventDetails";
@@ -106,16 +106,7 @@ const App = () => (
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/orga/scan" 
-        element={
-          <ProtectedRoute requireRole="organizer">
-            <OrganizerLayout>
-              <OrganizerScan />
-            </OrganizerLayout>
-          </ProtectedRoute>
-        } 
-      />
+
       <Route 
         path="/orga/analytics" 
         element={
