@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Camera as CameraIcon, X, AlertCircle, Smartphone, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Capacitor } from "@capacitor/core";
-import { BarcodeScanner } from "@capacitor-community/barcode-scanner";
+import { BarcodeScanner, BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
 
 interface QRScannerNativeProps {
   onScanSuccess: (decodedText: string) => void;
@@ -16,40 +16,17 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fonction pour activer la transparence de la page web
-  const setWebViewTransparency = (active: boolean) => {
-    const elements = [
-      document.body,
-      document.documentElement,
-      document.getElementById('root')
-    ];
-
-    elements.forEach(el => {
-      if (el) {
-        if (active) {
-          el.classList.add('scanner-active');
-        } else {
-          el.classList.remove('scanner-active');
-        }
-      }
-    });
-
-    // Ajouter/retirer une classe sur le body pour le CSS global
-    if (active) {
-      document.body.style.setProperty('--scanner-active', '1');
-    } else {
-      document.body.style.removeProperty('--scanner-active');
-    }
-  };
-
   const cleanup = useCallback(async () => {
-    console.log("[Scanner Native] Cleanup...");
+    console.log("[Scanner ML Kit] Cleanup...");
     try {
-      setWebViewTransparency(false);
-      await BarcodeScanner.showBackground();
+      // Retirer la classe de transparence
+      document.body.classList.remove('scanner-active');
+      document.documentElement.classList.remove('scanner-active');
+      
+      // Arrêter le scan
       await BarcodeScanner.stopScan();
     } catch (err) {
-      console.error("[Scanner Native] Cleanup error:", err);
+      console.error("[Scanner ML Kit] Cleanup error:", err);
     }
     setIsScanning(false);
     setIsLoading(false);
@@ -63,43 +40,29 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
 
   const checkPermission = async (): Promise<boolean> => {
     try {
-      // Vérifier le statut actuel
-      const status = await BarcodeScanner.checkPermission({ force: false });
+      const { camera } = await BarcodeScanner.checkPermissions();
       
-      if (status.granted) {
+      if (camera === 'granted' || camera === 'limited') {
         return true;
       }
       
-      if (status.denied) {
-        // L'utilisateur a refusé, on lui demande d'aller dans les réglages
+      if (camera === 'denied') {
         setError("❌ Accès caméra refusé. Allez dans Réglages > Spark Events > Caméra pour l'activer.");
         return false;
       }
       
-      if (status.asked) {
-        // On a déjà demandé, on redemande
-        const newStatus = await BarcodeScanner.checkPermission({ force: true });
-        return newStatus.granted || false;
-      }
-      
-      if (status.neverAsked) {
-        // Première demande
-        const newStatus = await BarcodeScanner.checkPermission({ force: true });
-        return newStatus.granted || false;
-      }
-      
-      // Cas par défaut : demander la permission
-      const requestStatus = await BarcodeScanner.checkPermission({ force: true });
-      return requestStatus.granted || false;
+      // Demander la permission
+      const { camera: newStatus } = await BarcodeScanner.requestPermissions();
+      return newStatus === 'granted' || newStatus === 'limited';
       
     } catch (err) {
-      console.error("[Scanner Native] Permission error:", err);
+      console.error("[Scanner ML Kit] Permission error:", err);
       return false;
     }
   };
 
   const startScan = async () => {
-    console.log("[Scanner Native] Starting scan...");
+    console.log("[Scanner ML Kit] Starting scan...");
     setError(null);
     setIsLoading(true);
 
@@ -118,34 +81,42 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
     }
 
     try {
-      // Activer la transparence AVANT de lancer le scan
-      setWebViewTransparency(true);
-      
-      // Cacher le fond de la WebView pour voir la caméra
-      await BarcodeScanner.hideBackground();
+      // Vérifier si le scanner est supporté
+      const { supported } = await BarcodeScanner.isSupported();
+      if (!supported) {
+        throw new Error("Le scanner n'est pas supporté sur cet appareil");
+      }
+
+      // Activer la transparence de la WebView
+      document.body.classList.add('scanner-active');
+      document.documentElement.classList.add('scanner-active');
       
       setIsScanning(true);
       setIsLoading(false);
 
-      console.log("[Scanner Native] Starting barcode scan...");
+      console.log("[Scanner ML Kit] Starting barcode scan with ML Kit...");
       
-      // Lancer le scan - cette fonction attend jusqu'à ce qu'un code soit détecté
-      const result = await BarcodeScanner.startScan();
-      
-      console.log("[Scanner Native] Scan result:", result);
-      
-      if (result.hasContent && result.content) {
-        // Code détecté !
-        console.log("[Scanner Native] QR Code detected:", result.content);
+      // Ajouter un listener pour les résultats de scan
+      const listener = await BarcodeScanner.addListener('barcodeScanned', async (result) => {
+        console.log("[Scanner ML Kit] Barcode detected:", result.barcode.displayValue);
+        
+        // Arrêter le scan
         await cleanup();
-        onScanSuccess(result.content);
-      } else {
-        // Scan annulé ou pas de contenu
-        await cleanup();
-      }
+        
+        // Retirer le listener
+        listener.remove();
+        
+        // Appeler le callback avec le résultat
+        onScanSuccess(result.barcode.displayValue);
+      });
+      
+      // Démarrer le scan avec configuration
+      await BarcodeScanner.startScan({
+        formats: [BarcodeFormat.QrCode, BarcodeFormat.Ean13, BarcodeFormat.Ean8], // QR Code + codes-barres classiques
+      });
       
     } catch (err: any) {
-      console.error("[Scanner Native] Scan error:", err);
+      console.error("[Scanner ML Kit] Scan error:", err);
       await cleanup();
       setError(`❌ Erreur: ${err.message || 'Impossible de démarrer le scanner'}`);
     }
@@ -186,7 +157,10 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
         <div className="space-y-6 py-4">
           <div className="text-center space-y-2">
             <p className="text-muted-foreground text-sm">
-              Scanner natif haute performance
+              Scanner natif ML Kit haute performance
+            </p>
+            <p className="text-xs text-muted-foreground/60">
+              Détection instantanée • QR Code & Codes-barres
             </p>
           </div>
           <Button
@@ -204,7 +178,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
           
           <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
             <Smartphone className="h-3 w-3" />
-            Mode Natif iOS Optimisé
+            Google ML Kit • iOS Optimisé
           </div>
         </div>
       ) : (
@@ -227,7 +201,7 @@ export const QRScannerNative = ({ onScanSuccess, onClose }: QRScannerNativeProps
             
             <div className="absolute bottom-6 left-0 right-0 text-center">
               <span className="bg-black/40 backdrop-blur-md text-white text-xs font-bold py-2 px-4 rounded-full border border-white/20">
-                CADREZ LE QR CODE
+                CADREZ LE QR CODE OU CODE-BARRE
               </span>
             </div>
           </div>
